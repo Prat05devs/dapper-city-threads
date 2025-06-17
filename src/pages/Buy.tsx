@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Search, Filter, Heart } from 'lucide-react';
+import { Search, Filter, Heart, Star, Crown, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -21,75 +21,93 @@ const Buy = () => {
   const products = [
     {
       id: 1,
-      name: 'Vintage Leather Jacket',
-      price: '₹2,500',
-      originalPrice: '₹8,000',
+      name: 'Off-White x Nike Air Jordan 1 Retro High',
+      price: '₹45,000',
+      originalPrice: '₹85,000',
       image: '/placeholder.svg',
       condition: 'Good',
       seller: 'Rahul K.',
       city: 'Delhi',
-      category: 'jackets',
-      likes: 24
+      category: 'sneakers',
+      likes: 156,
+      tags: ['Limited Edition', 'Verified', 'Off-White'],
+      rarity: 'Ultra Rare',
+      authentication: 'Verified'
     },
     {
       id: 2,
-      name: 'Designer Silk Dress',
-      price: '₹1,800',
-      originalPrice: '₹5,500',
+      name: 'Supreme Box Logo Hoodie FW20',
+      price: '₹28,000',
+      originalPrice: '₹55,000',
       image: '/placeholder.svg',
       condition: 'As New',
       seller: 'Priya M.',
       city: 'Bengaluru',
-      category: 'dresses',
-      likes: 18
+      category: 'streetwear',
+      likes: 89,
+      tags: ['Supreme', 'Verified', 'Streetwear'],
+      rarity: 'Rare',
+      authentication: 'Verified'
     },
     {
       id: 3,
-      name: 'Classic Denim Jeans',
-      price: '₹800',
-      originalPrice: '₹3,200',
+      name: 'Rolex Submariner Date (Vintage 1991)',
+      price: '₹2,50,000',
+      originalPrice: '₹4,50,000',
       image: '/placeholder.svg',
-      condition: 'Fair',
+      condition: 'Good',
       seller: 'Amit S.',
-      city: 'Dehradun',
-      category: 'jeans',
-      likes: 12
+      city: 'Mumbai',
+      category: 'watches',
+      likes: 234,
+      tags: ['Luxury', 'Verified', 'Vintage'],
+      rarity: 'Ultra Rare',
+      authentication: 'Expert Verified'
     },
     {
       id: 4,
-      name: 'Cotton Summer Top',
-      price: '₹450',
-      originalPrice: '₹1,500',
+      name: 'Travis Scott x Fragment Jordan 1 Low',
+      price: '₹65,000',
+      originalPrice: '₹1,20,000',
       image: '/placeholder.svg',
-      condition: 'Good',
+      condition: 'As New',
       seller: 'Sneha G.',
       city: 'Delhi',
-      category: 'tops',
-      likes: 15
+      category: 'sneakers',
+      likes: 312,
+      tags: ['Travis Scott', 'Fragment', 'Collab'],
+      rarity: 'Ultra Rare',
+      authentication: 'Verified'
     },
     {
       id: 5,
-      name: 'Formal Blazer',
-      price: '₹1,200',
-      originalPrice: '₹4,000',
+      name: 'Bape x Adidas Superstar Black',
+      price: '₹18,000',
+      originalPrice: '₹35,000',
       image: '/placeholder.svg',
       condition: 'Good',
       seller: 'Karan P.',
-      city: 'Bengaluru',
-      category: 'blazers',
-      likes: 9
+      city: 'Dehradun',
+      category: 'sneakers',
+      likes: 67,
+      tags: ['Bape', 'Adidas', 'Collab'],
+      rarity: 'Rare',
+      authentication: 'Verified'
     },
     {
       id: 6,
-      name: 'Ethnic Kurta',
-      price: '₹600',
-      originalPrice: '₹2,000',
+      name: 'Chrome Hearts Cross Ring',
+      price: '₹45,000',
+      originalPrice: '₹85,000',
       image: '/placeholder.svg',
       condition: 'As New',
       seller: 'Meera J.',
-      city: 'Delhi',
-      category: 'ethnic',
-      likes: 21
+      city: 'Bengaluru',
+      category: 'accessories',
+      likes: 143,
+      tags: ['Chrome Hearts', 'Luxury', 'Silver'],
+      rarity: 'Rare',
+      authentication: 'Expert Verified'
     }
   ];
 
@@ -99,112 +117,141 @@ const Buy = () => {
     return matchesSearch && matchesCategory;
   });
 
+  const getRarityColor = (rarity: string) => {
+    switch (rarity) {
+      case 'Ultra Rare': return 'bg-gradient-to-r from-purple-600 to-pink-600';
+      case 'Rare': return 'bg-gradient-to-r from-blue-600 to-indigo-600';
+      default: return 'bg-gray-600';
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-6 sm:py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Buy Pre-Loved Fashion</h1>
-          <p className="text-gray-600">Discover unique pieces from verified sellers in your city</p>
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2">Rare Finds & Heat</h1>
+          <p className="text-gray-600 text-sm sm:text-base">Discover authenticated luxury pieces and limited drops from verified sellers</p>
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 mb-6 sm:mb-8 border">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {/* Search */}
-            <div className="relative">
+            <div className="relative sm:col-span-2">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
-                placeholder="Search items..."
+                placeholder="Search rare items..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 border-gray-200 focus:border-purple-500 rounded-xl"
               />
             </div>
 
             {/* Category */}
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger>
+              <SelectTrigger className="rounded-xl border-gray-200">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white border shadow-lg">
                 <SelectItem value="all">All Categories</SelectItem>
-                <SelectItem value="jackets">Jackets</SelectItem>
-                <SelectItem value="dresses">Dresses</SelectItem>
-                <SelectItem value="jeans">Jeans</SelectItem>
-                <SelectItem value="tops">Tops</SelectItem>
-                <SelectItem value="blazers">Blazers</SelectItem>
-                <SelectItem value="ethnic">Ethnic Wear</SelectItem>
+                <SelectItem value="sneakers">Sneakers</SelectItem>
+                <SelectItem value="streetwear">Streetwear</SelectItem>
+                <SelectItem value="watches">Luxury Watches</SelectItem>
+                <SelectItem value="accessories">Accessories</SelectItem>
+                <SelectItem value="bags">Designer Bags</SelectItem>
               </SelectContent>
             </Select>
 
             {/* Price Range */}
             <Select value={priceRange} onValueChange={setPriceRange}>
-              <SelectTrigger>
+              <SelectTrigger className="rounded-xl border-gray-200">
                 <SelectValue placeholder="Price Range" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white border shadow-lg">
                 <SelectItem value="all">All Prices</SelectItem>
-                <SelectItem value="under-500">Under ₹500</SelectItem>
-                <SelectItem value="500-1000">₹500 - ₹1,000</SelectItem>
-                <SelectItem value="1000-2000">₹1,000 - ₹2,000</SelectItem>
-                <SelectItem value="above-2000">Above ₹2,000</SelectItem>
+                <SelectItem value="under-10k">Under ₹10,000</SelectItem>
+                <SelectItem value="10k-50k">₹10,000 - ₹50,000</SelectItem>
+                <SelectItem value="50k-100k">₹50,000 - ₹1,00,000</SelectItem>
+                <SelectItem value="above-100k">Above ₹1,00,000</SelectItem>
               </SelectContent>
             </Select>
 
             {/* Sort */}
             <Select>
-              <SelectTrigger>
+              <SelectTrigger className="rounded-xl border-gray-200">
                 <SelectValue placeholder="Sort By" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="newest">Newest First</SelectItem>
+              <SelectContent className="bg-white border shadow-lg">
+                <SelectItem value="newest">Newest Drops</SelectItem>
                 <SelectItem value="price-low">Price: Low to High</SelectItem>
                 <SelectItem value="price-high">Price: High to Low</SelectItem>
                 <SelectItem value="popular">Most Popular</SelectItem>
+                <SelectItem value="rarity">Rarity Level</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
 
         {/* Products Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
           {filteredProducts.map((product) => (
-            <Card key={product.id} className="group hover:shadow-lg transition-all duration-300 cursor-pointer">
-              <div className="relative aspect-square bg-gray-200 rounded-t-lg overflow-hidden">
+            <Card key={product.id} className="group hover:shadow-2xl transition-all duration-300 cursor-pointer border-0 shadow-lg hover:scale-105 bg-white">
+              <div className="relative aspect-square bg-gray-100 rounded-t-2xl overflow-hidden">
                 <img 
                   src={product.image} 
                   alt={product.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                 />
                 <Button 
                   size="sm" 
                   variant="ghost" 
-                  className="absolute top-2 right-2 bg-white/80 hover:bg-white"
+                  className="absolute top-3 right-3 bg-white/90 hover:bg-white shadow-lg rounded-full w-10 h-10 p-0"
                 >
                   <Heart className="w-4 h-4" />
                 </Button>
-                <Badge className="absolute top-2 left-2 bg-green-600 text-white">
+                
+                {/* Rarity Badge */}
+                <Badge className={`absolute top-3 left-3 text-white text-xs px-3 py-1 ${getRarityColor(product.rarity)} border-0`}>
+                  <Crown className="w-3 h-3 mr-1" />
+                  {product.rarity}
+                </Badge>
+                
+                {/* Authentication Badge */}
+                <Badge className="absolute bottom-3 left-3 bg-green-500 text-white text-xs px-2 py-1">
+                  <Zap className="w-3 h-3 mr-1" />
+                  {product.authentication}
+                </Badge>
+                
+                {/* Condition Badge */}
+                <Badge className="absolute bottom-3 right-3 bg-blue-500 text-white text-xs px-2 py-1">
                   {product.condition}
                 </Badge>
               </div>
               <CardContent className="p-4">
-                <h3 className="font-medium text-gray-900 mb-2 truncate">{product.name}</h3>
-                <div className="flex items-center space-x-2 mb-2">
-                  <span className="text-lg font-bold text-green-600">{product.price}</span>
-                  <span className="text-sm text-gray-500 line-through">{product.originalPrice}</span>
+                <div className="flex flex-wrap gap-1 mb-2">
+                  {product.tags.slice(0, 2).map((tag, index) => (
+                    <Badge key={index} variant="outline" className="text-xs px-2 py-0.5 border-purple-200 text-purple-600">
+                      {tag}
+                    </Badge>
+                  ))}
                 </div>
-                <div className="flex justify-between items-center text-sm text-gray-500 mb-3">
+                <h3 className="font-bold text-gray-900 mb-2 text-sm leading-tight line-clamp-2">{product.name}</h3>
+                <div className="flex items-center space-x-2 mb-3">
+                  <span className="text-lg font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">{product.price}</span>
+                  <span className="text-xs text-gray-500 line-through">{product.originalPrice}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs text-gray-500 mb-3">
                   <span>By {product.seller}</span>
                   <span>{product.city}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-1 text-sm text-gray-500">
-                    <Heart className="w-3 h-3" />
+                  <div className="flex items-center space-x-1 text-xs text-gray-500">
+                    <Heart className="w-3 h-3 fill-current text-red-400" />
                     <span>{product.likes}</span>
                   </div>
-                  <Button size="sm" className="bg-green-600 hover:bg-green-700">
-                    View Details
+                  <Button size="sm" className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white text-xs px-4 rounded-full">
+                    Cop Now
                   </Button>
                 </div>
               </CardContent>
@@ -213,9 +260,9 @@ const Buy = () => {
         </div>
 
         {/* Load More */}
-        <div className="text-center mt-12">
-          <Button variant="outline" size="lg" className="border-green-600 text-green-600 hover:bg-green-50">
-            Load More Items
+        <div className="text-center mt-8 sm:mt-12">
+          <Button variant="outline" size="lg" className="border-2 border-purple-600 text-purple-600 hover:bg-purple-50 px-8 py-3 rounded-full font-semibold">
+            Load More Heat
           </Button>
         </div>
       </div>
