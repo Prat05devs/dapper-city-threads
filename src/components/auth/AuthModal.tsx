@@ -25,6 +25,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     email: '',
     password: '',
     fullName: '',
+    phone: '',
+    city: '',
   });
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -40,7 +42,13 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await signUp(signUpData.email, signUpData.password, signUpData.fullName);
+    const { error } = await signUp(
+      signUpData.email, 
+      signUpData.password, 
+      signUpData.fullName,
+      signUpData.phone,
+      signUpData.city
+    );
     setLoading(false);
     if (!error) {
       onClose();
@@ -106,6 +114,28 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   type="email"
                   value={signUpData.email}
                   onChange={(e) => setSignUpData({ ...signUpData, email: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="signup-phone">Phone Number</Label>
+                <Input
+                  id="signup-phone"
+                  type="tel"
+                  value={signUpData.phone}
+                  onChange={(e) => setSignUpData({ ...signUpData, phone: e.target.value })}
+                  placeholder="+1 (555) 123-4567"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="signup-city">City</Label>
+                <Input
+                  id="signup-city"
+                  type="text"
+                  value={signUpData.city}
+                  onChange={(e) => setSignUpData({ ...signUpData, city: e.target.value })}
+                  placeholder="New York, NY"
                   required
                 />
               </div>
