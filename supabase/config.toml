@@ -1,1 +1,35 @@
+
 project_id = "xdsbggqczqfvkhhskvkn"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[auth]
+enabled = true
+port = 54324
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://localhost:3000"]
+jwt_expiry = 3600
+enable_signup = true
+enable_anonymous_sign_ins = false
+
+[db]
+enabled = true
+port = 54322
+major_version = 15
+
+[edge_functions]
+enabled = true
+port = 54323
+
+[functions.create-payment]
+verify_jwt = true
+
+[storage]
+enabled = true
+port = 54325
+file_size_limit = "50MiB"

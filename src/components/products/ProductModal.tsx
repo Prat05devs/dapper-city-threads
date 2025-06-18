@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Heart, MapPin, Star, MessageSquare } from 'lucide-react';
+import { Heart, MapPin, Star, MessageSquare, CreditCard } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tables } from '@/integrations/supabase/types';
@@ -29,6 +28,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
   const [bidAmount, setBidAmount] = useState('');
   const [bidMessage, setBidMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
 
   useEffect(() => {
     if (product && isOpen) {
@@ -129,14 +129,16 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
 
     setLoading(true);
 
-    const { error } = await supabase
+    const { data: bidData, error } = await supabase
       .from('bids')
       .insert({
         product_id: product.id,
         buyer_id: user.id,
         amount: Number(bidAmount),
         message: bidMessage,
-      });
+      })
+      .select()
+      .single();
 
     if (error) {
       toast({
@@ -151,10 +153,73 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
       });
       setBidAmount('');
       setBidMessage('');
-      onClose();
+      
+      // Trigger real-time notification for seller
+      await supabase
+        .from('notifications')
+        .insert({
+          user_id: product.seller_id,
+          type: 'new_bid',
+          title: 'New Bid Received',
+          message: `You received a bid of $${bidAmount} for ${product.name}`,
+          related_id: bidData.id,
+        });
     }
 
     setLoading(false);
+  };
+
+  const handleBuyNow = async () => {
+    if (!user || !product) {
+      toast({
+        title: "Please sign in",
+        description: "You need to be signed in to purchase items.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setPaymentLoading(true);
+
+    try {
+      // Create a bid at full price first
+      const { data: bidData, error: bidError } = await supabase
+        .from('bids')
+        .insert({
+          product_id: product.id,
+          buyer_id: user.id,
+          amount: Number(product.price),
+          message: 'Buy now purchase',
+          status: 'accepted',
+        })
+        .select()
+        .single();
+
+      if (bidError) throw bidError;
+
+      // Create Stripe payment session
+      const { data, error } = await supabase.functions.invoke('create-payment', {
+        body: {
+          bidId: bidData.id,
+          amount: Number(product.price),
+        },
+      });
+
+      if (error) throw error;
+
+      // Open Stripe checkout in a new tab
+      window.open(data.url, '_blank');
+
+    } catch (error) {
+      console.error('Payment error:', error);
+      toast({
+        title: "Payment failed",
+        description: "Failed to initiate payment. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setPaymentLoading(false);
+    }
   };
 
   if (!product) return null;
@@ -233,6 +298,21 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
               </div>
             )}
 
+            {/* Buy Now Section */}
+            {user && user.id !== product.seller_id && (
+              <div className="border-t pt-4">
+                <Button 
+                  onClick={handleBuyNow} 
+                  disabled={paymentLoading} 
+                  className="w-full mb-4"
+                  size="lg"
+                >
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  {paymentLoading ? 'Processing...' : `Buy Now - $${product.price}`}
+                </Button>
+              </div>
+            )}
+
             {/* Seller Reviews Section */}
             <div>
               <h3 className="font-semibold mb-3">Seller Reviews</h3>
@@ -286,12 +366,12 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
             {/* Bid Section */}
             {user && user.id !== product.seller_id && (
               <div className="border-t pt-4">
-                <h3 className="font-semibold mb-3">Place a Bid</h3>
+                <h3 className="font-semibold mb-3">Make an Offer</h3>
                 <div className="space-y-3">
                   <div>
                     <Input
                       type="number"
-                      placeholder="Enter your bid amount"
+                      placeholder="Enter your offer amount"
                       value={bidAmount}
                       onChange={(e) => setBidAmount(e.target.value)}
                     />
@@ -307,8 +387,9 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
                     onClick={placeBid} 
                     disabled={loading} 
                     className="w-full"
+                    variant="outline"
                   >
-                    {loading ? 'Placing Bid...' : 'Place Bid'}
+                    {loading ? 'Placing Offer...' : 'Make Offer'}
                   </Button>
                 </div>
               </div>

@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import Header from "./components/layout/Header";
 import Footer from "./components/layout/Footer";
+import NotificationSystem from "./components/notifications/NotificationSystem";
 import Home from "./pages/Home";
 import Buy from "./pages/Buy";
 import Sell from "./pages/Sell";
@@ -14,6 +15,7 @@ import Donate from "./pages/Donate";
 import About from "./pages/About";
 import SignIn from "./pages/SignIn";
 import MyActivity from "./pages/MyActivity";
+import PaymentSuccess from "./pages/PaymentSuccess";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +29,7 @@ const App = () => (
         <BrowserRouter>
           <div className="min-h-screen flex flex-col">
             <Header />
+            <NotificationSystem />
             <main className="flex-1">
               <Routes>
                 <Route path="/" element={<Home />} />
@@ -36,6 +39,7 @@ const App = () => (
                 <Route path="/about" element={<About />} />
                 <Route path="/signin" element={<SignIn />} />
                 <Route path="/my-activity" element={<MyActivity />} />
+                <Route path="/payment-success" element={<PaymentSuccess />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
