@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { CheckCircle, ArrowRight, Package } from 'lucide-react';
@@ -7,12 +6,23 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+type ListingPayment = {
+  id: string;
+  seller_id: string;
+  amount: number;
+  status: string;
+  stripe_session_id: string;
+  created_at: string;
+  type: string;
+  product_id: string;
+};
+
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [paymentDetails, setPaymentDetails] = useState<any>(null);
+  const [paymentDetails, setPaymentDetails] = useState<ListingPayment | null>(null);
 
   const sessionId = searchParams.get('session_id');
   const paymentType = searchParams.get('type');
@@ -35,6 +45,10 @@ const PaymentSuccess = () => {
 
       if (error) throw error;
 
+      if (!payment.product_id) {
+        throw new Error("Product ID is missing from payment record");
+      }
+
       if (payment && paymentType === 'featured') {
         // Update product to featured status
         const days = payment.type.includes('3') ? 3 : 7;
@@ -50,7 +64,7 @@ const PaymentSuccess = () => {
           .eq('id', payment.product_id);
       }
 
-      setPaymentDetails(payment);
+      setPaymentDetails(payment as ListingPayment);
       
       toast({
         title: "Payment successful!",

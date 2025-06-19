@@ -1,123 +1,65 @@
-
 import React, { useState, useEffect } from 'react';
-import { Plus, TrendingUp, DollarSign, Package, BarChart } from 'lucide-react';
+import { Plus, Star, Edit, Trash2, Eye, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Tables } from '@/integrations/supabase/types';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import ImageUpload from '@/components/products/ImageUpload';
 
-type Product = Tables<'products'>;
+const categories = [
+  'Electronics', 'Clothing', 'Home & Garden', 'Sports', 'Books', 
+  'Toys', 'Automotive', 'Health & Beauty', 'Jewelry', 'Other'
+];
+
+const conditions = ['New', 'Like New', 'Good', 'Fair', 'Poor'];
 
 const Sell = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
-  const [activeListings, setActiveListings] = useState<Product[]>([]);
+  const [products, setProducts] = useState([]);
+  const [isAddingProduct, setIsAddingProduct] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState(null);
+  
+  // Form state
   const [formData, setFormData] = useState({
     name: '',
+    description: '',
+    price: '',
     category: '',
     condition: '',
-    price: '',
-    description: '',
+    imageUrls: []
   });
-  const [imageUrls, setImageUrls] = useState<string[]>([]);
 
   useEffect(() => {
     if (user) {
-      fetchActiveListings();
+      fetchProducts();
+      fetchProfile();
     }
   }, [user]);
 
-  const fetchActiveListings = async () => {
-    if (!user) return;
-    
+  const fetchProducts = async () => {
     try {
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .eq('seller_id', user.id)
-        .eq('status', 'active')
+        .eq('seller_id', user?.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setActiveListings(data || []);
+      setProducts(data || []);
     } catch (error) {
-      console.error('Error fetching listings:', error);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) {
+      console.error('Error fetching products:', error);
       toast({
-        title: "Authentication required",
-        description: "Please sign in to create a listing.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (imageUrls.length === 0) {
-      toast({
-        title: "Images required",
-        description: "Please upload at least one image for your product.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const { error } = await supabase
-        .from('products')
-        .insert({
-          name: formData.name,
-          category: formData.category,
-          condition: formData.condition,
-          price: parseFloat(formData.price),
-          description: formData.description,
-          image_urls: imageUrls,
-          seller_id: user.id,
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: "Listing created successfully!",
-        description: "Your product is now live and available for buyers.",
-      });
-
-      // Reset form
-      setFormData({
-        name: '',
-        category: '',
-        condition: '',
-        price: '',
-        description: '',
-      });
-      setImageUrls([]);
-      
-      // Refresh listings
-      fetchActiveListings();
-    } catch (error) {
-      console.error('Error creating listing:', error);
-      toast({
-        title: "Error creating listing",
-        description: "Please try again.",
+        title: "Error",
+        description: "Failed to load your products",
         variant: "destructive",
       });
     } finally {
@@ -125,45 +67,158 @@ const Sell = () => {
     }
   };
 
-  const handleMakeFeatured = async (productId: string, days: number) => {
+  const fetchProfile = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user?.id)
+        .single();
+
+      if (error) throw error;
+      setProfile(data);
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     if (!user) return;
 
     try {
-      // Call Stripe payment function for featured listing
-      const { data, error } = await supabase.functions.invoke('create-payment', {
-        body: {
-          productId,
-          type: `featured_${days}_days`,
-          amount: days === 3 ? 500 : 800, // $5 for 3 days, $8 for 7 days
-        },
-      });
+      setLoading(true);
+      
+      const { data, error } = await supabase
+        .from('products')
+        .insert([{
+          ...formData,
+          price: parseFloat(formData.price),
+          seller_id: user.id,
+          image_urls: formData.imageUrls
+        }])
+        .select()
+        .single();
 
       if (error) throw error;
 
-      // Open Stripe checkout in a new tab
-      window.open(data.url, '_blank');
-    } catch (error) {
-      console.error('Error creating payment:', error);
       toast({
-        title: "Payment error",
-        description: "Failed to process payment. Please try again.",
+        title: "Success!",
+        description: "Your product has been listed successfully.",
+      });
+
+      setFormData({
+        name: '',
+        description: '',
+        price: '',
+        category: '',
+        condition: '',
+        imageUrls: []
+      });
+      setIsAddingProduct(false);
+      fetchProducts();
+      fetchProfile();
+    } catch (error) {
+      console.error('Error creating product:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create product listing",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteProduct = async (productId) => {
+    try {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', productId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success!",
+        description: "Product deleted successfully.",
+      });
+      
+      fetchProducts();
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete product",
         variant: "destructive",
       });
     }
   };
 
+  const handleFeatureProduct = async (productId, type) => {
+    try {
+      const amount = type === 'featured_3_days' ? 50 : 100;
+      
+      const { data, error } = await supabase.functions.invoke('create-payment', {
+        body: {
+          productId,
+          type,
+          amount
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        window.location.href = data.url;
+      }
+    } catch (error) {
+      console.error('Error creating payment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to process payment",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const openProductModal = (product) => {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+      <div class="bg-white rounded-lg p-6 max-w-md mx-4">
+        <img src="${product.image_urls?.[0] || '/placeholder.svg'}" alt="${product.name}" class="w-full h-48 object-cover rounded mb-4">
+        <h3 class="text-lg font-semibold mb-2">${product.name}</h3>
+        <p class="text-gray-600 mb-2">${product.description || 'No description'}</p>
+        <p class="text-lg font-bold text-green-600">₹${product.price}</p>
+        <button class="mt-4 px-4 py-2 bg-gray-500 text-white rounded" onclick="this.closest('.fixed').remove()">Close</button>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Use addEventListener instead of onclick property
+    const closeButton = modal.querySelector('button');
+    if (closeButton) {
+      closeButton.addEventListener('click', () => {
+        document.body.removeChild(modal);
+      });
+    }
+    
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        document.body.removeChild(modal);
+      }
+    });
+  };
+
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Sign In Required</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-600 mb-4">Please sign in to access the seller dashboard.</p>
-            <Button onClick={() => window.location.href = '/signin'} className="w-full">
-              Sign In
-            </Button>
+        <Card className="max-w-md">
+          <CardContent className="p-6 text-center">
+            <h2 className="text-xl font-semibold mb-4">Please Sign In</h2>
+            <p className="text-gray-600">You need to be signed in to access the seller dashboard.</p>
           </CardContent>
         </Card>
       </div>
@@ -171,247 +226,238 @@ const Sell = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Seller Dashboard</h1>
-          <p className="text-gray-600">Manage your listings, track sales, and list new items for the Dapper community.</p>
+          <h1 className="text-3xl font-bold text-gray-900">Seller Dashboard</h1>
+          <p className="text-gray-600">Manage your product listings and sales</p>
         </div>
 
-        <Tabs defaultValue="dashboard" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 max-w-md">
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="create">Create Listing</TabsTrigger>
-          </TabsList>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Plus className="h-6 w-6 text-blue-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Total Listings</p>
+                  <p className="text-2xl font-bold text-gray-900">{products.length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-          <TabsContent value="dashboard" className="space-y-6">
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Active Listings</CardTitle>
-                  <Package className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{activeListings.length}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Your products for sale
-                  </p>
-                </CardContent>
-              </Card>
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <TrendingUp className="h-6 w-6 text-green-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Total Sales</p>
+                  <p className="text-2xl font-bold text-gray-900">{profile?.total_sales || 0}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Views</CardTitle>
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">-</div>
-                  <p className="text-xs text-muted-foreground">
-                    Coming soon
-                  </p>
-                </CardContent>
-              </Card>
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-yellow-100 rounded-lg">
+                  <Star className="h-6 w-6 text-yellow-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Average Rating</p>
+                  <p className="text-2xl font-bold text-gray-900">{profile?.average_rating?.toFixed(1) || '0.0'}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Likes</CardTitle>
-                  <DollarSign className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {activeListings.reduce((sum, product) => sum + (product.likes_count || 0), 0)}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Across all listings
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Eye className="h-6 w-6 text-purple-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Free Listings Used</p>
+                  <p className="text-2xl font-bold text-gray-900">{profile?.free_listings_used || 0}/3</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-            {/* Active Listings */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Active Listings</CardTitle>
-                <p className="text-sm text-gray-600">Items currently available for sale</p>
-              </CardHeader>
-              <CardContent>
-                {activeListings.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-gray-500 mb-4">No active listings yet.</p>
-                    <Button onClick={() => document.querySelector('[value="create"]')?.click()}>
-                      Create Your First Listing
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {activeListings.map((listing) => (
-                      <div key={listing.id} className="flex items-center space-x-4 p-4 border rounded-lg">
-                        {listing.image_urls && listing.image_urls.length > 0 ? (
-                          <img 
-                            src={listing.image_urls[0]} 
-                            alt={listing.name} 
-                            className="w-16 h-16 object-cover rounded-lg" 
-                          />
-                        ) : (
-                          <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
-                            <Package className="w-6 h-6 text-gray-400" />
-                          </div>
-                        )}
-                        <div className="flex-1">
-                          <h3 className="font-medium">{listing.name}</h3>
-                          <p className="text-sm text-gray-600">Price: ₹{listing.price}</p>
-                          <div className="flex items-center space-x-4 text-sm text-gray-500">
-                            <span>{listing.likes_count || 0} likes</span>
-                            <span className="capitalize">{listing.condition}</span>
-                            {listing.is_featured && (
-                              <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs">
-                                Featured
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex flex-col space-y-2">
-                          <Button variant="outline" size="sm">
-                            Edit
-                          </Button>
-                          {!listing.is_featured && (
-                            <div className="flex space-x-2">
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => handleMakeFeatured(listing.id, 3)}
-                              >
-                                Feature 3d (₹5)
-                              </Button>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => handleMakeFeatured(listing.id, 7)}
-                              >
-                                Feature 7d (₹8)
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+        {/* Add Product Button */}
+        <div className="mb-6">
+          <Dialog open={isAddingProduct} onOpenChange={setIsAddingProduct}>
+            <DialogTrigger asChild>
+              <Button className="bg-green-600 hover:bg-green-700">
+                <Plus className="h-4 w-4 mr-2" />
+                Add New Product
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Add New Product</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <Label htmlFor="name">Product Name *</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    required
+                  />
+                </div>
 
-          <TabsContent value="create" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Plus className="w-5 h-5" />
-                  Create New Listing
-                </CardTitle>
-                <p className="text-sm text-gray-600">List your pre-loved fashion items for the Dapper community</p>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <Label htmlFor="productName">Product Name *</Label>
-                      <Input 
-                        id="productName" 
-                        placeholder="e.g., Vintage Leather Jacket" 
-                        className="mt-1"
-                        value={formData.name}
-                        onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                        required
-                      />
-                    </div>
+                <div>
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({...formData, description: e.target.value})}
+                    rows={3}
+                  />
+                </div>
 
-                    <div>
-                      <Label htmlFor="category">Category *</Label>
-                      <Select 
-                        value={formData.category} 
-                        onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
-                        required
-                      >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue placeholder="Select category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Clothing">Clothing</SelectItem>
-                          <SelectItem value="Shoes">Shoes</SelectItem>
-                          <SelectItem value="Accessories">Accessories</SelectItem>
-                          <SelectItem value="Electronics">Electronics</SelectItem>
-                          <SelectItem value="Home & Garden">Home & Garden</SelectItem>
-                          <SelectItem value="Sports">Sports</SelectItem>
-                          <SelectItem value="Books">Books</SelectItem>
-                          <SelectItem value="Other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="condition">Condition *</Label>
-                      <Select 
-                        value={formData.condition} 
-                        onValueChange={(value) => setFormData(prev => ({ ...prev, condition: value }))}
-                        required
-                      >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue placeholder="Select condition" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="As New">As New</SelectItem>
-                          <SelectItem value="Good">Good</SelectItem>
-                          <SelectItem value="Fair">Fair</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="price">Price (₹) *</Label>
-                      <Input 
-                        id="price" 
-                        type="number" 
-                        placeholder="Enter your asking price" 
-                        className="mt-1"
-                        value={formData.price}
-                        onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
-                        required
-                      />
-                    </div>
-                  </div>
-
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea 
-                      id="description" 
-                      placeholder="Describe the item's condition, style, fit, and any other relevant details..."
-                      className="mt-1 min-h-[100px]"
-                      value={formData.description}
-                      onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                    <Label htmlFor="price">Price (₹) *</Label>
+                    <Input
+                      id="price"
+                      type="number"
+                      value={formData.price}
+                      onChange={(e) => setFormData({...formData, price: e.target.value})}
+                      required
+                      min="0"
+                      step="0.01"
                     />
                   </div>
 
-                  <ImageUpload 
-                    onImagesChange={setImageUrls}
-                    existingImages={imageUrls}
-                    maxImages={5}
-                  />
+                  <div>
+                    <Label htmlFor="condition">Condition *</Label>
+                    <Select value={formData.condition} onValueChange={(value) => setFormData({...formData, condition: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select condition" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {conditions.map((condition) => (
+                          <SelectItem key={condition} value={condition}>{condition}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
 
-                  <div className="pt-4">
-                    <Button 
-                      type="submit" 
-                      className="w-full bg-green-600 hover:bg-green-700"
-                      disabled={loading}
+                <div>
+                  <Label htmlFor="category">Category *</Label>
+                  <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((category) => (
+                        <SelectItem key={category} value={category}>{category}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <ImageUpload
+                  onImagesChange={(urls) => setFormData({...formData, imageUrls: urls})}
+                  existingImages={formData.imageUrls}
+                />
+
+                <div className="flex justify-end space-x-2">
+                  <Button type="button" variant="outline" onClick={() => setIsAddingProduct(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={loading}>
+                    {loading ? 'Creating...' : 'Create Product'}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {/* Products Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {products.map((product) => (
+            <Card key={product.id} className="overflow-hidden">
+              <div className="relative">
+                <img
+                  src={product.image_urls?.[0] || '/placeholder.svg'}
+                  alt={product.name}
+                  className="w-full h-48 object-cover"
+                />
+                {product.is_featured && (
+                  <Badge className="absolute top-2 left-2 bg-yellow-500">
+                    Featured
+                  </Badge>
+                )}
+              </div>
+              <CardContent className="p-4">
+                <h3 className="font-semibold text-lg mb-2">{product.name}</h3>
+                <p className="text-gray-600 text-sm mb-2 line-clamp-2">{product.description}</p>
+                <p className="text-xl font-bold text-green-600 mb-4">₹{product.price}</p>
+                
+                <div className="flex justify-between items-center">
+                  <div className="flex space-x-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openProductModal(product)}
                     >
-                      {loading ? 'Creating Listing...' : 'Create Listing'}
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => deleteProduct(product.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
-                </form>
+                  
+                  {!product.is_featured && (
+                    <div className="flex space-x-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleFeatureProduct(product.id, 'featured_3_days')}
+                        className="text-xs"
+                      >
+                        Feature 3d ₹50
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleFeatureProduct(product.id, 'featured_7_days')}
+                        className="text-xs"
+                      >
+                        Feature 7d ₹100
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
+          ))}
+        </div>
+
+        {products.length === 0 && !loading && (
+          <div className="text-center py-12">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No products yet</h3>
+            <p className="text-gray-600">Start by adding your first product to sell!</p>
+          </div>
+        )}
       </div>
     </div>
   );
