@@ -60,6 +60,44 @@ export type Database = {
           },
         ]
       }
+      listing_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          seller_id: string
+          status: string | null
+          stripe_session_id: string | null
+          type: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          seller_id: string
+          status?: string | null
+          stripe_session_id?: string | null
+          type: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          seller_id?: string
+          status?: string | null
+          stripe_session_id?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_payments_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -143,8 +181,10 @@ export type Database = {
           condition: string
           created_at: string
           description: string | null
+          featured_until: string | null
           id: string
           image_urls: string[] | null
+          is_featured: boolean | null
           likes_count: number | null
           name: string
           price: number
@@ -157,8 +197,10 @@ export type Database = {
           condition: string
           created_at?: string
           description?: string | null
+          featured_until?: string | null
           id?: string
           image_urls?: string[] | null
+          is_featured?: boolean | null
           likes_count?: number | null
           name: string
           price: number
@@ -171,8 +213,10 @@ export type Database = {
           condition?: string
           created_at?: string
           description?: string | null
+          featured_until?: string | null
           id?: string
           image_urls?: string[] | null
+          is_featured?: boolean | null
           likes_count?: number | null
           name?: string
           price?: number
@@ -197,9 +241,13 @@ export type Database = {
           city: string | null
           created_at: string
           email: string
+          free_listings_used: number | null
           full_name: string | null
           id: string
+          listing_count: number | null
           phone: string | null
+          stripe_account_id: string | null
+          stripe_onboarding_completed: boolean | null
           total_ratings: number | null
           total_sales: number | null
           updated_at: string
@@ -211,9 +259,13 @@ export type Database = {
           city?: string | null
           created_at?: string
           email: string
+          free_listings_used?: number | null
           full_name?: string | null
           id: string
+          listing_count?: number | null
           phone?: string | null
+          stripe_account_id?: string | null
+          stripe_onboarding_completed?: boolean | null
           total_ratings?: number | null
           total_sales?: number | null
           updated_at?: string
@@ -225,9 +277,13 @@ export type Database = {
           city?: string | null
           created_at?: string
           email?: string
+          free_listings_used?: number | null
           full_name?: string | null
           id?: string
+          listing_count?: number | null
           phone?: string | null
+          stripe_account_id?: string | null
+          stripe_onboarding_completed?: boolean | null
           total_ratings?: number | null
           total_sales?: number | null
           updated_at?: string
@@ -292,9 +348,13 @@ export type Database = {
           amount: number
           bid_id: string
           buyer_id: string
+          confirmation_status: string | null
+          confirmed_at: string | null
           created_at: string
           id: string
+          platform_fee: number | null
           product_id: string
+          seller_amount: number | null
           seller_id: string
           status: string | null
           stripe_payment_intent_id: string | null
@@ -305,9 +365,13 @@ export type Database = {
           amount: number
           bid_id: string
           buyer_id: string
+          confirmation_status?: string | null
+          confirmed_at?: string | null
           created_at?: string
           id?: string
+          platform_fee?: number | null
           product_id: string
+          seller_amount?: number | null
           seller_id: string
           status?: string | null
           stripe_payment_intent_id?: string | null
@@ -318,9 +382,13 @@ export type Database = {
           amount?: number
           bid_id?: string
           buyer_id?: string
+          confirmation_status?: string | null
+          confirmed_at?: string | null
           created_at?: string
           id?: string
+          platform_fee?: number | null
           product_id?: string
+          seller_amount?: number | null
           seller_id?: string
           status?: string | null
           stripe_payment_intent_id?: string | null

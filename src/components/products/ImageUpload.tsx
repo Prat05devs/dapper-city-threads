@@ -87,7 +87,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
 
   return (
     <div className="space-y-4">
-      <Label>Product Images</Label>
+      <Label>Product Images *</Label>
       
       {/* Image Preview Grid */}
       {imageUrls.length > 0 && (
@@ -138,7 +138,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
               />
             </div>
             <p className="text-sm text-gray-500">
-              Upload up to {maxImages - imageUrls.length} more images
+              Upload up to {maxImages - imageUrls.length} more images (PNG, JPG up to 10MB each)
             </p>
           </div>
         </div>

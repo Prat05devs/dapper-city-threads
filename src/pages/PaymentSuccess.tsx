@@ -1,67 +1,70 @@
 
 import React, { useEffect, useState } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
-import { CheckCircle } from 'lucide-react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { CheckCircle, ArrowRight, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
-  const bidId = searchParams.get('bid_id');
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [orderDetails, setOrderDetails] = useState<any>(null);
+  const [paymentDetails, setPaymentDetails] = useState<any>(null);
+
+  const sessionId = searchParams.get('session_id');
+  const paymentType = searchParams.get('type');
 
   useEffect(() => {
-    if (bidId) {
-      updateBidStatus();
+    if (sessionId) {
+      verifyPayment();
     }
-  }, [bidId]);
+  }, [sessionId]);
 
-  const updateBidStatus = async () => {
+  const verifyPayment = async () => {
     try {
-      // Update bid status to completed
-      const { error: bidError } = await supabase
-        .from('bids')
-        .update({ status: 'accepted' })
-        .eq('id', bidId);
-
-      if (bidError) throw bidError;
-
-      // Fetch order details
-      const { data: bidData, error: fetchError } = await supabase
-        .from('bids')
-        .select(`
-          *,
-          product:products(*),
-          buyer:profiles!buyer_id(*)
-        `)
-        .eq('id', bidId)
+      // Update payment status in database
+      const { data: payment, error } = await supabase
+        .from('listing_payments')
+        .update({ status: 'completed' })
+        .eq('stripe_session_id', sessionId)
+        .select()
         .single();
 
-      if (fetchError) throw fetchError;
+      if (error) throw error;
 
-      setOrderDetails(bidData);
+      if (payment && paymentType === 'featured') {
+        // Update product to featured status
+        const days = payment.type.includes('3') ? 3 : 7;
+        const featuredUntil = new Date();
+        featuredUntil.setDate(featuredUntil.getDate() + days);
 
-      // Update product status to sold
-      await supabase
-        .from('products')
-        .update({ status: 'sold' })
-        .eq('id', bidData.product_id);
+        await supabase
+          .from('products')
+          .update({
+            is_featured: true,
+            featured_until: featuredUntil.toISOString(),
+          })
+          .eq('id', payment.product_id);
+      }
 
-      // Create notification for seller
-      await supabase
-        .from('notifications')
-        .insert({
-          user_id: bidData.product.seller_id,
-          type: 'sale_completed',
-          title: 'Item Sold!',
-          message: `Your item "${bidData.product.name}" has been sold for $${bidData.amount}`,
-          related_id: bidId,
-        });
-
+      setPaymentDetails(payment);
+      
+      toast({
+        title: "Payment successful!",
+        description: paymentType === 'featured' 
+          ? "Your product is now featured and will get more visibility."
+          : "Your payment was processed successfully.",
+      });
     } catch (error) {
-      console.error('Error updating payment status:', error);
+      console.error('Payment verification error:', error);
+      toast({
+        title: "Payment verification failed",
+        description: "Please contact support if you continue to see this message.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -69,45 +72,64 @@ const PaymentSuccess = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-500"></div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Verifying your payment...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-            <CheckCircle className="w-8 h-8 text-green-600" />
-          </div>
-          <CardTitle className="text-2xl text-green-600">Payment Successful!</CardTitle>
-        </CardHeader>
-        <CardContent className="text-center space-y-4">
-          {orderDetails && (
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h3 className="font-semibold mb-2">Order Details</h3>
-              <p><strong>Item:</strong> {orderDetails.product.name}</p>
-              <p><strong>Amount:</strong> ${orderDetails.amount}</p>
-              <p><strong>Order ID:</strong> {orderDetails.id}</p>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="max-w-md w-full">
+        <Card>
+          <CardHeader className="text-center">
+            <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+              <CheckCircle className="w-10 h-10 text-green-600" />
             </div>
-          )}
-          
-          <p className="text-gray-600">
-            Thank you for your purchase! You will receive a confirmation email shortly.
-          </p>
-          
-          <div className="space-y-2">
-            <Button asChild className="w-full">
-              <Link to="/my-activity">View My Orders</Link>
-            </Button>
-            <Button variant="outline" asChild className="w-full">
-              <Link to="/buy">Continue Shopping</Link>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+            <CardTitle className="text-2xl text-green-600">Payment Successful!</CardTitle>
+          </CardHeader>
+          <CardContent className="text-center space-y-4">
+            {paymentType === 'featured' ? (
+              <>
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <Package className="w-8 h-8 text-yellow-600 mx-auto mb-2" />
+                  <p className="text-yellow-800 font-medium">Your product is now featured!</p>
+                  <p className="text-yellow-700 text-sm">
+                    It will appear at the top of search results and get more visibility from buyers.
+                  </p>
+                </div>
+                <p className="text-gray-600">
+                  Featured duration: {paymentDetails?.type?.includes('3') ? '3 days' : '7 days'}
+                </p>
+              </>
+            ) : (
+              <p className="text-gray-600">
+                Your payment has been processed successfully.
+              </p>
+            )}
+            
+            <div className="flex flex-col space-y-3 pt-4">
+              <Button 
+                onClick={() => navigate('/sell')} 
+                className="w-full bg-green-600 hover:bg-green-700"
+              >
+                Go to Seller Dashboard
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => navigate('/buy')} 
+                className="w-full"
+              >
+                Browse Products
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

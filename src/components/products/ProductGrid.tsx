@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Heart, MapPin } from 'lucide-react';
+import { Heart, MapPin, Star } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
 import ProductModal from './ProductModal';
@@ -51,22 +51,27 @@ const ProductGrid: React.FC = () => {
         query = query.eq('condition', filters.condition);
       }
 
-      // Apply sorting
+      // Apply sorting - featured products first, then by selected sort
       switch (filters.sortBy) {
         case 'oldest':
-          query = query.order('created_at', { ascending: true });
+          query = query.order('is_featured', { ascending: false })
+                      .order('created_at', { ascending: true });
           break;
         case 'price_low':
-          query = query.order('price', { ascending: true });
+          query = query.order('is_featured', { ascending: false })
+                      .order('price', { ascending: true });
           break;
         case 'price_high':
-          query = query.order('price', { ascending: false });
+          query = query.order('is_featured', { ascending: false })
+                      .order('price', { ascending: false });
           break;
         case 'most_liked':
-          query = query.order('likes_count', { ascending: false });
+          query = query.order('is_featured', { ascending: false })
+                      .order('likes_count', { ascending: false });
           break;
         default:
-          query = query.order('created_at', { ascending: false });
+          query = query.order('is_featured', { ascending: false })
+                      .order('created_at', { ascending: false });
       }
 
       query = query.limit(20);
@@ -142,10 +147,21 @@ const ProductGrid: React.FC = () => {
             {products.map((product) => (
               <Card 
                 key={product.id} 
-                className="group cursor-pointer hover:shadow-lg transition-shadow duration-300"
+                className={`group cursor-pointer hover:shadow-lg transition-shadow duration-300 ${
+                  product.is_featured ? 'ring-2 ring-yellow-400 shadow-lg' : ''
+                }`}
                 onClick={() => handleProductClick(product)}
               >
-                <div className="aspect-square bg-gray-100 overflow-hidden">
+                {product.is_featured && (
+                  <div className="absolute top-2 left-2 z-10">
+                    <Badge className="bg-yellow-500 text-yellow-900 border-yellow-600">
+                      <Star className="w-3 h-3 mr-1" />
+                      Featured
+                    </Badge>
+                  </div>
+                )}
+                
+                <div className="aspect-square bg-gray-100 overflow-hidden relative">
                   {product.image_urls && product.image_urls.length > 0 ? (
                     <img 
                       src={product.image_urls[0]} 
@@ -175,7 +191,7 @@ const ProductGrid: React.FC = () => {
                   </div>
                   
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-2xl font-bold text-green-600">${product.price}</span>
+                    <span className="text-2xl font-bold text-green-600">₹{product.price}</span>
                     <Badge variant="secondary">{product.condition}</Badge>
                   </div>
                   
