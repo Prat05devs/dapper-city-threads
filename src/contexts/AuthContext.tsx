@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,29 +29,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
 
   useEffect(() => {
+    let unsubscribed = false;
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        if (unsubscribed) return;
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        console.log('Auth state changed:', { event, session });
       }
     );
 
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (unsubscribed) return;
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      console.log('Initial session:', session);
+    }).catch((err) => {
+      if (unsubscribed) return;
+      setLoading(false);
+      console.error('Error getting session:', err);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      unsubscribed = true;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
+    setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    
+    setLoading(false);
     if (error) {
       toast({
         title: "Sign In Failed",
@@ -64,8 +76,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         title: "Welcome back!",
         description: "You have successfully signed in.",
       });
+      // Redirect to home after sign-in
+      window.location.href = "/";
     }
-    
     return { error };
   };
 
