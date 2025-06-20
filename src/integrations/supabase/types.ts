@@ -65,6 +65,7 @@ export type Database = {
           amount: number
           created_at: string
           id: string
+          product_id: string | null
           seller_id: string
           status: string | null
           stripe_session_id: string | null
@@ -74,6 +75,7 @@ export type Database = {
           amount: number
           created_at?: string
           id?: string
+          product_id?: string | null
           seller_id: string
           status?: string | null
           stripe_session_id?: string | null
@@ -83,12 +85,20 @@ export type Database = {
           amount?: number
           created_at?: string
           id?: string
+          product_id?: string | null
           seller_id?: string
           status?: string | null
           stripe_session_id?: string | null
           type?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "listing_payments_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "listing_payments_seller_id_fkey"
             columns: ["seller_id"]

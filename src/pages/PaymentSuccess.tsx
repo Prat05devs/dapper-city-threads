@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { CheckCircle, ArrowRight, Package } from 'lucide-react';
@@ -62,8 +61,11 @@ const PaymentSuccess = () => {
 
         if (error) throw error;
 
+        // Cast to include product_id since TypeScript types haven't been regenerated yet
+        const paymentWithProductId = payment as ListingPayment;
+
         // Handle featured listing payments
-        if (payment && payment.product_id && (paymentType === 'featured_3_days' || paymentType === 'featured_7_days')) {
+        if (paymentWithProductId && paymentWithProductId.product_id && (paymentType === 'featured_3_days' || paymentType === 'featured_7_days')) {
           // Update product to featured status
           const days = paymentType === 'featured_3_days' ? 3 : 7;
           const featuredUntil = new Date();
@@ -75,10 +77,10 @@ const PaymentSuccess = () => {
               is_featured: true,
               featured_until: featuredUntil.toISOString(),
             })
-            .eq('id', payment.product_id);
+            .eq('id', paymentWithProductId.product_id);
         }
 
-        setPaymentDetails(payment as ListingPayment);
+        setPaymentDetails(paymentWithProductId);
         
         toast({
           title: "Payment successful!",
