@@ -82,7 +82,7 @@ Best regards,
             </div>
             <div className="bg-white/10 rounded-xl p-6 backdrop-blur-sm">
               <img 
-                src="/placeholder.svg" 
+                src="/DonationImpact.jpg" 
                 alt="Sustainable fashion donation" 
                 className="w-full h-64 object-cover rounded-lg"
               />

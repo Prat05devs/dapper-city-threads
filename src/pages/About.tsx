@@ -6,28 +6,10 @@ import { Card, CardContent } from '@/components/ui/card';
 const About = () => {
   const team = [
     {
-      name: 'Arjun Sharma',
+      name: 'Prateek Thapliyal',
       role: 'Co-Founder & CEO',
-      image: '/placeholder.svg',
+      image: '/Founder.jpeg',
       bio: 'Passionate about sustainable fashion and technology. Previously worked at leading e-commerce platforms.'
-    },
-    {
-      name: 'Priya Patel',
-      role: 'Co-Founder & CTO',
-      image: '/placeholder.svg',
-      bio: 'Tech enthusiast with a vision for circular economy. Expert in building scalable marketplace platforms.'
-    },
-    {
-      name: 'Sneha Gupta',
-      role: 'Head of Community',
-      image: '/placeholder.svg',
-      bio: 'Community builder and sustainability advocate. Connects cities and users through shared values.'
-    },
-    {
-      name: 'Karan Singh',
-      role: 'Head of Operations',
-      image: '/placeholder.svg',
-      bio: 'Operations expert ensuring smooth city-to-city expansion and logistics management.'
     }
   ];
 
@@ -99,11 +81,11 @@ const About = () => {
               </div>
             </div>
             <div className="bg-green-100 rounded-2xl p-8">
-              <img 
-                src="/placeholder.svg" 
-                alt="Sustainable fashion mission" 
-                className="w-full h-80 object-cover rounded-xl"
-              />
+            <img
+              src="/MissionSection.jpg"
+              alt="Sustainable fashion mission"
+              className="w-full h-80 object-cover rounded-xl"
+            />
             </div>
           </div>
         </div>
