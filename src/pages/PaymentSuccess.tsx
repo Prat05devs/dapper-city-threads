@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { CheckCircle, ArrowRight, Package } from 'lucide-react';
@@ -14,7 +15,6 @@ type ListingPayment = {
   stripe_session_id: string;
   created_at: string;
   type: string;
-  product_id: string;
 };
 
 const PaymentSuccess = () => {
@@ -44,25 +44,6 @@ const PaymentSuccess = () => {
         .single();
 
       if (error) throw error;
-
-      if (!payment.product_id) {
-        throw new Error("Product ID is missing from payment record");
-      }
-
-      if (payment && paymentType === 'featured') {
-        // Update product to featured status
-        const days = payment.type.includes('3') ? 3 : 7;
-        const featuredUntil = new Date();
-        featuredUntil.setDate(featuredUntil.getDate() + days);
-
-        await supabase
-          .from('products')
-          .update({
-            is_featured: true,
-            featured_until: featuredUntil.toISOString(),
-          })
-          .eq('id', payment.product_id);
-      }
 
       setPaymentDetails(payment as ListingPayment);
       
