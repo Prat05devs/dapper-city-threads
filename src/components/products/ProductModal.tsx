@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -161,7 +162,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
           user_id: product.seller_id,
           type: 'new_bid',
           title: 'New Bid Received',
-          message: `You received a bid of $${bidAmount} for ${product.name}`,
+          message: `You received a bid of ₹${bidAmount} for ${product.name}`,
           related_id: bidData.id,
         });
     }
@@ -197,11 +198,13 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
 
       if (bidError) throw bidError;
 
-      // Create Stripe payment session
-      const { data, error } = await supabase.functions.invoke('create-payment', {
+      // Create marketplace payment with commission handling
+      const { data, error } = await supabase.functions.invoke('create-marketplace-payment', {
         body: {
           bidId: bidData.id,
           amount: Number(product.price),
+          sellerId: product.seller_id,
+          productId: product.id,
         },
       });
 
@@ -235,8 +238,8 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto mx-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left side - Image */}
           <div className="space-y-4">
             <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
@@ -258,7 +261,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
           <div className="space-y-4">
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-2xl font-bold">{product.name}</h2>
+                <h2 className="text-xl sm:text-2xl font-bold">{product.name}</h2>
                 <Badge variant="secondary" className="mt-1">
                   {product.condition}
                 </Badge>
@@ -273,8 +276,8 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
               </Button>
             </div>
 
-            <div className="text-3xl font-bold text-green-600">
-              ${product.price}
+            <div className="text-2xl sm:text-3xl font-bold text-green-600">
+              ₹{product.price}
             </div>
 
             {seller && (
@@ -308,7 +311,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
                   size="lg"
                 >
                   <CreditCard className="w-4 h-4 mr-2" />
-                  {paymentLoading ? 'Processing...' : `Buy Now - $${product.price}`}
+                  {paymentLoading ? 'Processing...' : `Buy Now - ₹${product.price}`}
                 </Button>
               </div>
             )}
@@ -318,7 +321,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
               <h3 className="font-semibold mb-3">Seller Reviews</h3>
               {seller && (
                 <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <span className="font-medium">{seller.full_name}</span>
                     <div className="flex items-center space-x-2">
                       <div className="flex">
@@ -340,7 +343,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
                   Be the first one to review this seller.
                 </p>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-3 max-h-40 overflow-y-auto">
                   {reviews.map((review) => (
                     <div key={review.id} className="border-b pb-3 last:border-b-0">
                       <div className="flex items-center justify-between mb-1">

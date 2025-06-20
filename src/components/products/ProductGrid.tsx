@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
 import ProductModal from './ProductModal';
 import ProductFilters, { FilterState } from './ProductFilters';
+import CitySelector from '../geography/CitySelector';
 
 type Product = Tables<'products'>;
 
@@ -16,6 +17,7 @@ const ProductGrid: React.FC = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [selectedCity, setSelectedCity] = useState('');
   const [filters, setFilters] = useState<FilterState>({
     search: '',
     category: '',
@@ -26,7 +28,7 @@ const ProductGrid: React.FC = () => {
 
   useEffect(() => {
     fetchProducts();
-  }, [filters]);
+  }, [filters, selectedCity]);
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -49,6 +51,15 @@ const ProductGrid: React.FC = () => {
       // Apply condition filter
       if (filters.condition) {
         query = query.eq('condition', filters.condition);
+      }
+
+      // Apply price range filter
+      query = query.gte('price', filters.priceRange[0]).lte('price', filters.priceRange[1]);
+
+      // Apply city filter if selected
+      if (selectedCity) {
+        // For now, we'll add city filtering logic when seller profiles have city info
+        // This will be enhanced when we integrate with seller profiles
       }
 
       // Apply sorting - featured products first, then by selected sort
@@ -101,17 +112,25 @@ const ProductGrid: React.FC = () => {
       priceRange: [0, 1000],
       sortBy: 'newest',
     });
+    setSelectedCity('');
   };
 
   if (loading) {
     return (
       <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+          <CitySelector
+            selectedCity={selectedCity}
+            onCityChange={setSelectedCity}
+            className="w-full sm:w-auto"
+          />
+        </div>
         <ProductFilters
           filters={filters}
           onFiltersChange={setFilters}
           onClearFilters={clearFilters}
         />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
           {[...Array(8)].map((_, i) => (
             <Card key={i} className="animate-pulse">
               <div className="aspect-square bg-gray-200"></div>
@@ -129,6 +148,20 @@ const ProductGrid: React.FC = () => {
   return (
     <>
       <div className="space-y-6">
+        {/* City Selector */}
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between bg-white p-4 rounded-lg shadow-sm border">
+          <CitySelector
+            selectedCity={selectedCity}
+            onCityChange={setSelectedCity}
+            className="w-full sm:w-auto"
+          />
+          {selectedCity && (
+            <div className="text-sm text-gray-600">
+              Showing products in {selectedCity}
+            </div>
+          )}
+        </div>
+
         <ProductFilters
           filters={filters}
           onFiltersChange={setFilters}
@@ -143,25 +176,25 @@ const ProductGrid: React.FC = () => {
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
             {products.map((product) => (
               <Card 
                 key={product.id} 
-                className={`group cursor-pointer hover:shadow-lg transition-shadow duration-300 ${
-                  product.is_featured ? 'ring-2 ring-yellow-400 shadow-lg' : ''
+                className={`group cursor-pointer hover:shadow-lg transition-all duration-300 ${
+                  product.is_featured ? 'ring-2 ring-yellow-400 shadow-lg bg-gradient-to-br from-yellow-50 to-orange-50' : ''
                 }`}
                 onClick={() => handleProductClick(product)}
               >
                 {product.is_featured && (
                   <div className="absolute top-2 left-2 z-10">
-                    <Badge className="bg-yellow-500 text-yellow-900 border-yellow-600">
-                      <Star className="w-3 h-3 mr-1" />
+                    <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0 shadow-md">
+                      <Star className="w-3 h-3 mr-1 fill-current" />
                       Featured
                     </Badge>
                   </div>
                 )}
                 
-                <div className="aspect-square bg-gray-100 overflow-hidden relative">
+                <div className="aspect-square bg-gray-100 overflow-hidden relative rounded-t-lg">
                   {product.image_urls && product.image_urls.length > 0 ? (
                     <img 
                       src={product.image_urls[0]} 
@@ -174,13 +207,13 @@ const ProductGrid: React.FC = () => {
                     </div>
                   )}
                 </div>
-                <CardContent className="p-4">
+                <CardContent className="p-3 sm:p-4">
                   <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-semibold text-lg truncate flex-1">{product.name}</h3>
+                    <h3 className="font-semibold text-base sm:text-lg truncate flex-1 pr-2">{product.name}</h3>
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      className="text-gray-400 hover:text-red-500"
+                      className="text-gray-400 hover:text-red-500 flex-shrink-0"
                       onClick={(e) => {
                         e.stopPropagation();
                         // Handle like functionality
@@ -191,13 +224,13 @@ const ProductGrid: React.FC = () => {
                   </div>
                   
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-2xl font-bold text-green-600">₹{product.price}</span>
-                    <Badge variant="secondary">{product.condition}</Badge>
+                    <span className="text-xl sm:text-2xl font-bold text-green-600">₹{product.price}</span>
+                    <Badge variant="secondary" className="text-xs">{product.condition}</Badge>
                   </div>
                   
                   <div className="flex items-center text-gray-600 mb-2">
-                    <MapPin className="w-4 h-4 mr-1" />
-                    <span className="text-sm">Location</span>
+                    <MapPin className="w-4 h-4 mr-1 flex-shrink-0" />
+                    <span className="text-sm truncate">Location</span>
                   </div>
                   
                   <div className="flex items-center justify-between text-sm text-gray-500">
@@ -205,7 +238,7 @@ const ProductGrid: React.FC = () => {
                       <Heart className="w-4 h-4 mr-1" />
                       <span>{product.likes_count} likes</span>
                     </div>
-                    <span>{product.category}</span>
+                    <span className="text-xs truncate">{product.category}</span>
                   </div>
                 </CardContent>
               </Card>

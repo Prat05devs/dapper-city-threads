@@ -36,19 +36,34 @@ const PaymentSuccess = () => {
 
   const verifyPayment = async () => {
     try {
-      // Update payment status in database
-      const { data: payment, error } = await supabase
-        .from('listing_payments')
-        .update({ status: 'completed' })
-        .eq('stripe_session_id', sessionId)
-        .select()
-        .single();
+      if (paymentType === 'marketplace') {
+        // Handle marketplace payment verification
+        const { data: transaction, error } = await supabase
+          .from('transactions')
+          .update({ status: 'completed' })
+          .eq('stripe_session_id', sessionId)
+          .select()
+          .single();
 
-      if (error) throw error;
+        if (error) throw error;
 
-      // Handle featured listing payments
-      if (payment && (paymentType === 'featured_3_days' || paymentType === 'featured_7_days')) {
-        if (payment.product_id) {
+        toast({
+          title: "Purchase successful!",
+          description: "Your order has been placed. The seller has been notified.",
+        });
+      } else {
+        // Handle listing payment verification
+        const { data: payment, error } = await supabase
+          .from('listing_payments')
+          .update({ status: 'completed' })
+          .eq('stripe_session_id', sessionId)
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        // Handle featured listing payments
+        if (payment && payment.product_id && (paymentType === 'featured_3_days' || paymentType === 'featured_7_days')) {
           // Update product to featured status
           const days = paymentType === 'featured_3_days' ? 3 : 7;
           const featuredUntil = new Date();
@@ -62,14 +77,14 @@ const PaymentSuccess = () => {
             })
             .eq('id', payment.product_id);
         }
-      }
 
-      setPaymentDetails(payment as ListingPayment);
-      
-      toast({
-        title: "Payment successful!",
-        description: getSuccessMessage(paymentType),
-      });
+        setPaymentDetails(payment as ListingPayment);
+        
+        toast({
+          title: "Payment successful!",
+          description: getSuccessMessage(paymentType),
+        });
+      }
     } catch (error) {
       console.error('Payment verification error:', error);
       toast({
@@ -114,7 +129,7 @@ const PaymentSuccess = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Verifying your payment...</p>
@@ -124,7 +139,7 @@ const PaymentSuccess = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="max-w-md w-full">
         <Card>
           <CardHeader className="text-center">
