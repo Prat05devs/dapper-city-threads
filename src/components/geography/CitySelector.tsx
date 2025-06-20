@@ -30,11 +30,15 @@ const CitySelector: React.FC<CitySelectorProps> = ({
 
   const fetchCities = async () => {
     try {
-      // Use raw SQL query since cities table might not be in types yet
-      const { data, error } = await supabase.rpc('get_cities');
+      const { data, error } = await supabase
+        .from('cities')
+        .select('*')
+        .order('country', { ascending: true })
+        .order('name', { ascending: true });
       
       if (error) {
-        // Fallback to hardcoded cities if the function doesn't exist
+        console.error('Error fetching cities:', error);
+        // Fallback to hardcoded cities if the query fails
         const fallbackCities = [
           { id: '1', name: 'Delhi', country: 'India' },
           { id: '2', name: 'Mumbai', country: 'India' },
@@ -68,7 +72,7 @@ const CitySelector: React.FC<CitySelectorProps> = ({
     }
   };
 
-  const groupedCities = cities.reduce((acc, city) => {
+  const groupedCities: Record<string, City[]> = cities.reduce((acc, city) => {
     if (!acc[city.country]) {
       acc[city.country] = [];
     }

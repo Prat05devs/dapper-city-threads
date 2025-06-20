@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { CheckCircle, ArrowRight, Package } from 'lucide-react';
@@ -106,7 +105,7 @@ const PaymentSuccess = () => {
       case 'listing_fee':
         return "You can now create additional listings beyond your free quota.";
       case 'marketplace':
-        return "Your purchase was successful. The seller will be notified.";
+        return "Your purchase was successful. The seller has been notified.";
       default:
         return "Your payment was processed successfully.";
     }
