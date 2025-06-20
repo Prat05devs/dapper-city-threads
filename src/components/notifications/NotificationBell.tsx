@@ -21,8 +21,11 @@ const NotificationBell: React.FC = () => {
 
     fetchNotifications();
 
+    // Create a unique channel name for the notification bell
+    const channelName = `notification-bell-${user.id}`;
+    
     const channel = supabase
-      .channel('notifications')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {

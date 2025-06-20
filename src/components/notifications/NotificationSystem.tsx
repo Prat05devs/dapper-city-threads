@@ -15,9 +15,12 @@ const NotificationSystem: React.FC = () => {
   useEffect(() => {
     if (!user) return;
 
+    // Create a unique channel name for the notification system
+    const channelName = `notification-system-${user.id}`;
+    
     // Subscribe to real-time notifications
     const channel = supabase
-      .channel('notifications')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
