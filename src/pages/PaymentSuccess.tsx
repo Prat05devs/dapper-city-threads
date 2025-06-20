@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { CheckCircle, ArrowRight, Package } from 'lucide-react';
@@ -14,7 +15,7 @@ type ListingPayment = {
   stripe_session_id: string;
   created_at: string;
   type: string;
-  product_id: string | null;
+  product_id?: string | null;
 };
 
 const PaymentSuccess = () => {
