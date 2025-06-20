@@ -4,7 +4,7 @@ import { ArrowRight, Users, Recycle, Shield, Star, Zap, Crown } from 'lucide-rea
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import CitySelector from '@/components/CitySelector';
+import LocationSelector from '@/components/LocationSelector';
 
 const Home = () => {
   const featuredProducts = [
@@ -76,7 +76,7 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-300">
-      <CitySelector />
+      <LocationSelector />
       
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-purple-100 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-12 sm:py-16 lg:py-24 overflow-hidden hero-dark">
