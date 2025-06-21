@@ -265,6 +265,62 @@
     box-shadow: 0 -4px 20px hsl(0 0% 0% / 0.3);
   }
 
+  /* Location Selector Enhancements */
+  .location-selector {
+    background: linear-gradient(135deg, 
+      hsl(var(--background)), 
+      hsl(var(--muted))
+    );
+    border: 1px solid hsl(var(--border));
+    transition: all 0.3s ease;
+  }
+
+  .dark .location-selector {
+    background: linear-gradient(135deg, 
+      hsl(0 0% 8%), 
+      hsl(0 0% 12%)
+    );
+    border: 1px solid hsl(0 0% 20%);
+  }
+
+  .location-selector:hover {
+    border-color: hsl(var(--primary));
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1);
+  }
+
+  .dark .location-selector:hover {
+    border-color: hsl(var(--neon-purple));
+    box-shadow: 0 0 0 3px hsl(var(--neon-purple) / 0.2),
+                0 0 20px hsl(var(--neon-purple) / 0.1);
+  }
+
+  /* Select component enhancements */
+  .dark [data-radix-select-trigger] {
+    background: hsl(0 0% 10%);
+    border: 1px solid hsl(0 0% 20%);
+    color: hsl(0 0% 95%);
+  }
+
+  .dark [data-radix-select-trigger]:focus {
+    border-color: hsl(var(--neon-purple));
+    box-shadow: 0 0 0 2px hsl(var(--neon-purple) / 0.2);
+  }
+
+  .dark [data-radix-select-content] {
+    background: hsl(0 0% 8%);
+    border: 1px solid hsl(0 0% 20%);
+    box-shadow: 0 10px 40px hsl(0 0% 0% / 0.5);
+  }
+
+  .dark [data-radix-select-item] {
+    color: hsl(0 0% 95%);
+  }
+
+  .dark [data-radix-select-item]:hover {
+    background: hsl(var(--neon-purple) / 0.1);
+    color: hsl(var(--neon-purple));
+  }
+
   /* Smooth transitions */
   * {
     transition: background-color 0.3s ease, 

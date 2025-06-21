@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import LocationSelector from '@/components/LocationSelector';
 import HeroSection from '@/components/home/HeroSection';
@@ -28,7 +27,12 @@ const Home = () => {
       {/* Location Selector Section */}
       <div className="w-full flex flex-col items-center justify-center px-4 py-8 bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 border-b border-purple-100 dark:border-gray-600 transition-colors duration-300">
         <div className="w-full flex flex-col sm:flex-row items-center justify-center gap-3">
-          <LocationSelector/>
+          <LocationSelector
+            valueCountry={country}
+            valueCity={city}
+            onCountryChange={setCountry}
+            onCityChange={setCity}
+          />
         </div>
       </div>
 
