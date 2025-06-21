@@ -196,7 +196,9 @@ export type Database = {
           image_urls: string[] | null
           is_featured: boolean | null
           likes_count: number | null
+          listing_type: string | null
           name: string
+          payment_status: string | null
           price: number
           seller_id: string
           status: string | null
@@ -212,7 +214,9 @@ export type Database = {
           image_urls?: string[] | null
           is_featured?: boolean | null
           likes_count?: number | null
+          listing_type?: string | null
           name: string
+          payment_status?: string | null
           price: number
           seller_id: string
           status?: string | null
@@ -228,7 +232,9 @@ export type Database = {
           image_urls?: string[] | null
           is_featured?: boolean | null
           likes_count?: number | null
+          listing_type?: string | null
           name?: string
+          payment_status?: string | null
           price?: number
           seller_id?: string
           status?: string | null

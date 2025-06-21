@@ -22,7 +22,7 @@ const categories = [
   'Toys', 'Automotive', 'Health & Beauty', 'Jewelry', 'Other'
 ];
 
-const conditions = ['New', 'Like New', 'Good', 'Fair', 'Poor'];
+const conditions = ['Fair', 'Good', 'As New'];
 
 const Sell = () => {
   const { user } = useAuth();
@@ -30,6 +30,7 @@ const Sell = () => {
   const [products, setProducts] = useState([]);
   const [isAddingProduct, setIsAddingProduct] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [profile, setProfile] = useState(null);
   
   // Form state
@@ -51,13 +52,19 @@ const Sell = () => {
 
   const fetchProducts = async () => {
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from('products')
         .select('*')
         .eq('seller_id', user?.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching products:', error);
+        throw error;
+      }
+      
+      console.log('Fetched products:', data);
       setProducts(data || []);
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -79,7 +86,12 @@ const Sell = () => {
         .eq('id', user?.id)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching profile:', error);
+        throw error;
+      }
+      
+      console.log('Fetched profile:', data);
       setProfile(data);
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -87,16 +99,44 @@ const Sell = () => {
   };
 
   const canCreateFreeListing = () => {
-    return profile && profile.free_listings_used < 3;
+    return profile && (profile.free_listings_used || 0) < 3;
   };
 
   const needsListingPayment = () => {
-    return profile && profile.free_listings_used >= 3;
+    return profile && (profile.free_listings_used || 0) >= 3;
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      description: '',
+      price: '',
+      category: '',
+      condition: '',
+      imageUrls: []
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to create a product listing.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate required fields
+    if (!formData.name || !formData.price || !formData.category || !formData.condition) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     // Check if user needs to pay for listing
     if (needsListingPayment()) {
@@ -109,46 +149,55 @@ const Sell = () => {
     }
 
     try {
-      setLoading(true);
+      setSubmitting(true);
+      console.log('Creating product with data:', formData);
       
+      const productData = {
+        name: formData.name,
+        description: formData.description || '',
+        price: parseFloat(formData.price),
+        category: formData.category,
+        condition: formData.condition,
+        seller_id: user.id,
+        image_urls: formData.imageUrls,
+        status: 'active',
+        listing_type: 'free',
+        payment_status: 'completed'
+      };
+
+      console.log('Inserting product data:', productData);
+
       const { data, error } = await supabase
         .from('products')
-        .insert([{
-          ...formData,
-          price: parseFloat(formData.price),
-          seller_id: user.id,
-          image_urls: formData.imageUrls
-        }])
+        .insert([productData])
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Product creation error:', error);
+        throw error;
+      }
+
+      console.log('Product created successfully:', data);
 
       toast({
         title: "Success!",
         description: "Your product has been listed successfully.",
       });
 
-      setFormData({
-        name: '',
-        description: '',
-        price: '',
-        category: '',
-        condition: '',
-        imageUrls: []
-      });
+      resetForm();
       setIsAddingProduct(false);
-      fetchProducts();
-      fetchProfile();
+      await fetchProducts();
+      await fetchProfile();
     } catch (error) {
       console.error('Error creating product:', error);
       toast({
         title: "Error",
-        description: "Failed to create product listing",
+        description: error.message || "Failed to create product listing",
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -312,6 +361,7 @@ const Sell = () => {
                       value={formData.name}
                       onChange={(e) => setFormData({...formData, name: e.target.value})}
                       required
+                      placeholder="Enter product name"
                     />
                   </div>
 
@@ -322,6 +372,7 @@ const Sell = () => {
                       value={formData.description}
                       onChange={(e) => setFormData({...formData, description: e.target.value})}
                       rows={3}
+                      placeholder="Describe your product"
                     />
                   </div>
 
@@ -336,6 +387,7 @@ const Sell = () => {
                         required
                         min="0"
                         step="0.01"
+                        placeholder="0.00"
                       />
                     </div>
 
@@ -374,11 +426,14 @@ const Sell = () => {
                   />
 
                   <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2">
-                    <Button type="button" variant="outline" onClick={() => setIsAddingProduct(false)}>
+                    <Button type="button" variant="outline" onClick={() => {
+                      setIsAddingProduct(false);
+                      resetForm();
+                    }}>
                       Cancel
                     </Button>
-                    <Button type="submit" disabled={loading}>
-                      {loading ? 'Creating...' : 'Create Product'}
+                    <Button type="submit" disabled={submitting}>
+                      {submitting ? 'Creating...' : 'Create Product'}
                     </Button>
                   </div>
                 </form>
@@ -398,70 +453,76 @@ const Sell = () => {
         </div>
 
         {/* Products Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {products.map((product) => (
-            <Card key={product.id} className="overflow-hidden">
-              <div className="relative">
-                <img
-                  src={product.image_urls?.[0] || '/placeholder.svg'}
-                  alt={product.name}
-                  className="w-full h-48 object-cover"
-                />
-                {product.is_featured && (
-                  <Badge className="absolute top-2 left-2 bg-yellow-500">
-                    <Star className="w-3 h-3 mr-1" />
-                    Featured
-                  </Badge>
-                )}
-              </div>
-              <CardContent className="p-4">
-                <h3 className="font-semibold text-base sm:text-lg mb-2 line-clamp-1">{product.name}</h3>
-                <p className="text-gray-600 text-sm mb-2 line-clamp-2">{product.description}</p>
-                <p className="text-lg sm:text-xl font-bold text-green-600 mb-4">₹{product.price}</p>
-                
-                <div className="space-y-3">
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => openProductModal(product)}
-                      className="flex-1 min-w-0"
-                    >
-                      <Eye className="h-4 w-4 mr-1" />
-                      View
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => deleteProduct(product.id)}
-                      className="flex-1 min-w-0"
-                    >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      Delete
-                    </Button>
-                  </div>
-                  
-                  {!product.is_featured && (
-                    <div className="space-y-2">
-                      <ListingPaymentButton 
-                        type="featured_3_days" 
-                        productId={product.id}
-                      >
-                        Feature 3 days - ₹100
-                      </ListingPaymentButton>
-                      <ListingPaymentButton 
-                        type="featured_7_days" 
-                        productId={product.id}
-                      >
-                        Feature 7 days - ₹200
-                      </ListingPaymentButton>
-                    </div>
+        {loading ? (
+          <div className="text-center py-12">
+            <p className="text-gray-600">Loading your products...</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            {products.map((product) => (
+              <Card key={product.id} className="overflow-hidden">
+                <div className="relative">
+                  <img
+                    src={product.image_urls?.[0] || '/placeholder.svg'}
+                    alt={product.name}
+                    className="w-full h-48 object-cover"
+                  />
+                  {product.is_featured && (
+                    <Badge className="absolute top-2 left-2 bg-yellow-500">
+                      <Star className="w-3 h-3 mr-1" />
+                      Featured
+                    </Badge>
                   )}
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                <CardContent className="p-4">
+                  <h3 className="font-semibold text-base sm:text-lg mb-2 line-clamp-1">{product.name}</h3>
+                  <p className="text-gray-600 text-sm mb-2 line-clamp-2">{product.description}</p>
+                  <p className="text-lg sm:text-xl font-bold text-green-600 mb-4">₹{product.price}</p>
+                  
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => openProductModal(product)}
+                        className="flex-1 min-w-0"
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        View
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => deleteProduct(product.id)}
+                        className="flex-1 min-w-0"
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete
+                      </Button>
+                    </div>
+                    
+                    {!product.is_featured && (
+                      <div className="space-y-2">
+                        <ListingPaymentButton 
+                          type="featured_3_days" 
+                          productId={product.id}
+                        >
+                          Feature 3 days - ₹100
+                        </ListingPaymentButton>
+                        <ListingPaymentButton 
+                          type="featured_7_days" 
+                          productId={product.id}
+                        >
+                          Feature 7 days - ₹200
+                        </ListingPaymentButton>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
 
         {products.length === 0 && !loading && (
           <div className="text-center py-12">

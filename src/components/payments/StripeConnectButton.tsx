@@ -16,6 +16,7 @@ const StripeConnectButton: React.FC<StripeConnectButtonProps> = ({ onSuccess }) 
   const handleConnectStripe = async () => {
     try {
       setLoading(true);
+      console.log('Starting Stripe Connect flow...');
       
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -27,6 +28,8 @@ const StripeConnectButton: React.FC<StripeConnectButtonProps> = ({ onSuccess }) 
         return;
       }
 
+      console.log('User authenticated, calling Stripe Connect function...');
+
       const { data, error } = await supabase.functions.invoke('create-stripe-connect-account', {
         body: {
           country: 'IN', // Default to India, can be made dynamic
@@ -35,9 +38,19 @@ const StripeConnectButton: React.FC<StripeConnectButtonProps> = ({ onSuccess }) 
         }
       });
 
-      if (error) throw error;
+      console.log('Stripe Connect response:', { data, error });
+
+      if (error) {
+        console.error('Stripe Connect error:', error);
+        throw error;
+      }
+
+      if (!data?.onboarding_url) {
+        throw new Error('No onboarding URL received from Stripe');
+      }
 
       // Open Stripe onboarding in new tab
+      console.log('Opening Stripe onboarding URL:', data.onboarding_url);
       window.open(data.onboarding_url, '_blank');
       
       toast({
@@ -51,9 +64,10 @@ const StripeConnectButton: React.FC<StripeConnectButtonProps> = ({ onSuccess }) 
 
     } catch (error) {
       console.error('Stripe Connect error:', error);
+      const errorMessage = error?.message || 'Failed to connect to Stripe';
       toast({
         title: "Connection failed",
-        description: "Failed to connect to Stripe. Please try again.",
+        description: errorMessage + ". Please try again.",
         variant: "destructive",
       });
     } finally {
