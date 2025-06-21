@@ -35,7 +35,15 @@ const ProductGrid: React.FC = () => {
     try {
       let query = supabase
         .from('products')
-        .select('*')
+        .select(`
+          *,
+          seller:profiles!seller_id(
+            full_name,
+            city,
+            average_rating,
+            total_ratings
+          )
+        `)
         .eq('status', 'active');
 
       // Apply search filter
@@ -55,12 +63,6 @@ const ProductGrid: React.FC = () => {
 
       // Apply price range filter
       query = query.gte('price', filters.priceRange[0]).lte('price', filters.priceRange[1]);
-
-      // Apply city filter if selected
-      if (selectedCity) {
-        // For now, we'll add city filtering logic when seller profiles have city info
-        // This will be enhanced when we integrate with seller profiles
-      }
 
       // Apply sorting - featured products first, then by selected sort
       switch (filters.sortBy) {
@@ -91,6 +93,8 @@ const ProductGrid: React.FC = () => {
 
       if (data && !error) {
         setProducts(data);
+      } else {
+        console.error('Error fetching products:', error);
       }
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -170,8 +174,8 @@ const ProductGrid: React.FC = () => {
 
         {products.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500">No products found matching your criteria.</p>
-            <Button onClick={clearFilters} variant="outline" className="mt-4">
+            <p className="text-gray-500 mb-4">No products found matching your criteria.</p>
+            <Button onClick={clearFilters} variant="outline">
               Clear all filters
             </Button>
           </div>
@@ -216,7 +220,7 @@ const ProductGrid: React.FC = () => {
                       className="text-gray-400 hover:text-red-500 flex-shrink-0"
                       onClick={(e) => {
                         e.stopPropagation();
-                        // Handle like functionality
+                        // Handle like functionality here if needed
                       }}
                     >
                       <Heart className="w-4 h-4" />
@@ -230,7 +234,9 @@ const ProductGrid: React.FC = () => {
                   
                   <div className="flex items-center text-gray-600 mb-2">
                     <MapPin className="w-4 h-4 mr-1 flex-shrink-0" />
-                    <span className="text-sm truncate">Location</span>
+                    <span className="text-sm truncate">
+                      {(product as any).seller?.city || 'Location not specified'}
+                    </span>
                   </div>
                   
                   <div className="flex items-center justify-between text-sm text-gray-500">

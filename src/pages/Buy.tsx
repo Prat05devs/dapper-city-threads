@@ -14,14 +14,21 @@ const Buy = () => {
           <p className="text-xl mb-8 max-w-2xl mx-auto">
             Discover unique, pre-loved fashion pieces and give them a new life while reducing environmental impact.
           </p>
+          <div className="text-lg opacity-90">
+            Browse all available items • Make offers • Connect with sellers
+          </div>
         </div>
       </div>
 
       {/* Products Section */}
       <div className="container mx-auto px-4 py-12">
         <div className="flex justify-between items-center mb-8">
-          <h2 className="text-2xl font-bold">Available Items</h2>
-          {/* Add filters here later */}
+          <div>
+            <h2 className="text-2xl font-bold mb-2">Available Items</h2>
+            <p className="text-gray-600">
+              All products are available for viewing. Sign in to place bids, contact sellers, and leave reviews.
+            </p>
+          </div>
         </div>
         
         <ProductGrid />
