@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -346,16 +345,16 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto mx-4">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto mx-4 p-0">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
           {/* Left side - Images */}
-          <div className="space-y-4">
+          <div className="bg-gray-50 p-6">
             {product.image_urls && product.image_urls.length > 1 ? (
               <Carousel className="w-full">
                 <CarouselContent>
                   {product.image_urls.map((url, index) => (
                     <CarouselItem key={index}>
-                      <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                      <div className="aspect-square bg-white rounded-lg overflow-hidden shadow-lg">
                         <img 
                           src={url} 
                           alt={`${product.name} - Image ${index + 1}`}
@@ -365,11 +364,11 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
                     </CarouselItem>
                   ))}
                 </CarouselContent>
-                <CarouselPrevious />
-                <CarouselNext />
+                <CarouselPrevious className="left-2" />
+                <CarouselNext className="right-2" />
               </Carousel>
             ) : (
-              <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+              <div className="aspect-square bg-white rounded-lg overflow-hidden shadow-lg">
                 {product.image_urls && product.image_urls.length > 0 ? (
                   <img 
                     src={product.image_urls[0]} 
@@ -377,8 +376,11 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-400">
-                    No image available
+                  <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-100">
+                    <div className="text-center">
+                      <div className="text-6xl mb-2">📷</div>
+                      <p>No image available</p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -386,26 +388,33 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
           </div>
 
           {/* Right side - Details */}
-          <div className="space-y-6">
+          <div className="p-6 space-y-6 overflow-y-auto max-h-[95vh]">
             <div className="flex items-start justify-between">
-              <div>
-                <h2 className="text-2xl font-bold">{product.name}</h2>
-                <Badge variant="secondary" className="mt-2">
-                  {product.condition}
-                </Badge>
+              <div className="flex-1">
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">{product.name}</h2>
+                <div className="flex items-center gap-2 mb-3">
+                  <Badge variant="secondary" className="text-sm">
+                    {product.condition}
+                  </Badge>
+                  <Badge variant="outline" className="text-sm">
+                    {product.category}
+                  </Badge>
+                </div>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleLike}
-                className={isLiked ? 'text-red-500' : 'text-gray-400'}
-              >
-                <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
-              </Button>
+              {user && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleLike}
+                  className={isLiked ? 'text-red-500' : 'text-gray-400'}
+                >
+                  <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
+                </Button>
+              )}
             </div>
 
             <div className="text-3xl font-bold text-green-600">
-              ₹{product.price}
+              ₹{product.price.toLocaleString()}
             </div>
 
             {seller && (
@@ -417,74 +426,88 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
 
             {product.description && (
               <div>
-                <h3 className="font-semibold mb-2">Description</h3>
-                <p className="text-gray-700">{product.description}</p>
+                <h3 className="font-semibold mb-2 text-gray-900">Description</h3>
+                <p className="text-gray-700 leading-relaxed">{product.description}</p>
               </div>
             )}
 
-            {/* Buy Now Section */}
+            {/* Action Buttons for Authenticated Users */}
             {user && user.id !== product.seller_id && (
-              <div className="border-t pt-6">
-                <Button 
-                  onClick={handleBuyNow} 
-                  disabled={paymentLoading} 
-                  className="w-full mb-4"
-                  size="lg"
-                >
-                  <CreditCard className="w-4 h-4 mr-2" />
-                  {paymentLoading ? 'Processing...' : `Buy Now - ₹${product.price}`}
-                </Button>
-              </div>
-            )}
-
-            {/* Bid Section */}
-            {user && user.id !== product.seller_id && (
-              <div className="border-t pt-6">
-                <h3 className="font-semibold mb-3">Make an Offer</h3>
-                <div className="space-y-3">
-                  <Input
-                    type="number"
-                    placeholder="Enter your offer amount"
-                    value={bidAmount}
-                    onChange={(e) => setBidAmount(e.target.value)}
-                  />
-                  <Textarea
-                    placeholder="Optional message to seller"
-                    value={bidMessage}
-                    onChange={(e) => setBidMessage(e.target.value)}
-                    rows={2}
-                  />
+              <>
+                {/* Buy Now Section */}
+                <div className="border-t pt-6">
                   <Button 
-                    onClick={placeBid} 
-                    disabled={loading} 
-                    className="w-full"
-                    variant="outline"
+                    onClick={handleBuyNow} 
+                    disabled={paymentLoading} 
+                    className="w-full mb-4"
+                    size="lg"
                   >
-                    {loading ? 'Placing Offer...' : 'Make Offer'}
+                    <CreditCard className="w-4 h-4 mr-2" />
+                    {paymentLoading ? 'Processing...' : `Buy Now - ₹${product.price.toLocaleString()}`}
                   </Button>
                 </div>
-              </div>
+
+                {/* Bid Section */}
+                <div className="border-t pt-6">
+                  <h3 className="font-semibold mb-3 text-gray-900">Make an Offer</h3>
+                  <div className="space-y-3">
+                    <Input
+                      type="number"
+                      placeholder="Enter your offer amount"
+                      value={bidAmount}
+                      onChange={(e) => setBidAmount(e.target.value)}
+                    />
+                    <Textarea
+                      placeholder="Optional message to seller"
+                      value={bidMessage}
+                      onChange={(e) => setBidMessage(e.target.value)}
+                      rows={2}
+                    />
+                    <Button 
+                      onClick={placeBid} 
+                      disabled={loading} 
+                      className="w-full"
+                      variant="outline"
+                    >
+                      {loading ? 'Placing Offer...' : 'Make Offer'}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Contact Seller Section */}
+                <div className="border-t pt-6">
+                  <h3 className="font-semibold mb-3 text-gray-900">Contact Seller</h3>
+                  <div className="space-y-3">
+                    <Textarea
+                      placeholder="Send a message to the seller..."
+                      value={contactMessage}
+                      onChange={(e) => setContactMessage(e.target.value)}
+                      rows={3}
+                    />
+                    <Button 
+                      onClick={sendMessage} 
+                      disabled={!contactMessage.trim()}
+                      className="w-full"
+                      variant="outline"
+                    >
+                      <Send className="w-4 h-4 mr-2" />
+                      Send Message
+                    </Button>
+                  </div>
+                </div>
+              </>
             )}
 
-            {/* Contact Seller Section */}
-            {user && user.id !== product.seller_id && (
+            {/* Sign In Prompt for Non-Authenticated Users */}
+            {!user && (
               <div className="border-t pt-6">
-                <h3 className="font-semibold mb-3">Contact Seller</h3>
-                <div className="space-y-3">
-                  <Textarea
-                    placeholder="Send a message to the seller..."
-                    value={contactMessage}
-                    onChange={(e) => setContactMessage(e.target.value)}
-                    rows={3}
-                  />
-                  <Button 
-                    onClick={sendMessage} 
-                    disabled={!contactMessage.trim()}
-                    className="w-full"
-                    variant="outline"
-                  >
-                    <Send className="w-4 h-4 mr-2" />
-                    Send Message
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h3 className="font-semibold mb-2 text-blue-900">Sign in to interact</h3>
+                  <p className="text-blue-700 mb-3">
+                    Sign in to place bids, contact sellers, and leave reviews.
+                  </p>
+                  <Button className="w-full" variant="outline">
+                    Sign In
                   </Button>
                 </div>
               </div>
@@ -492,22 +515,22 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
 
             {/* Seller Info & Reviews Section */}
             <div className="border-t pt-6">
-              <h3 className="font-semibold mb-4">Seller Information</h3>
+              <h3 className="font-semibold mb-4 text-gray-900">Seller Information</h3>
               {seller && (
                 <div className="mb-6 p-4 bg-gray-50 rounded-lg">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium text-lg">{seller.full_name}</span>
+                    <span className="font-medium text-lg text-gray-900">{seller.full_name}</span>
                     <div className="flex items-center space-x-2">
                       <div className="flex">
                         {renderStars(Math.round(seller.average_rating || 0))}
                       </div>
                       <span className="text-sm text-gray-600">
-                        ({seller.total_ratings} reviews)
+                        ({seller.total_ratings || 0} reviews)
                       </span>
                     </div>
                   </div>
                   <div className="text-sm text-gray-600">
-                    {seller.total_sales} items sold
+                    {seller.total_sales || 0} items sold
                   </div>
                 </div>
               )}
@@ -515,7 +538,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
               {/* Reviews */}
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-medium">Reviews</h4>
+                  <h4 className="font-medium text-gray-900">Reviews</h4>
                   {user && user.id !== product.seller_id && !showReviewForm && (
                     <Button 
                       onClick={() => setShowReviewForm(true)}
@@ -529,11 +552,11 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
 
                 {/* Review Form */}
                 {showReviewForm && (
-                  <div className="mb-6 p-4 border rounded-lg">
-                    <h5 className="font-medium mb-3">Write a Review</h5>
+                  <div className="mb-6 p-4 border rounded-lg bg-gray-50">
+                    <h5 className="font-medium mb-3 text-gray-900">Write a Review</h5>
                     <div className="space-y-3">
                       <div>
-                        <label className="block text-sm font-medium mb-1">Rating</label>
+                        <label className="block text-sm font-medium mb-1 text-gray-700">Rating</label>
                         <div className="flex">
                           {renderStars(reviewRating, true, setReviewRating)}
                         </div>
@@ -565,15 +588,25 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
                 )}
 
                 {reviews.length === 0 ? (
-                  <p className="text-gray-500 text-center py-6 bg-gray-50 rounded-lg">
-                    Be the first one to review this seller.
-                  </p>
+                  <div className="text-center py-8 bg-gray-50 rounded-lg">
+                    <div className="text-4xl mb-2">⭐</div>
+                    <p className="text-gray-600 mb-2">No reviews yet</p>
+                    {user && user.id !== product.seller_id && (
+                      <Button 
+                        onClick={() => setShowReviewForm(true)}
+                        variant="outline"
+                        size="sm"
+                      >
+                        Be the first to review this seller
+                      </Button>
+                    )}
+                  </div>
                 ) : (
                   <div className="space-y-4 max-h-60 overflow-y-auto">
                     {reviews.map((review) => (
                       <div key={review.id} className="border-b pb-4 last:border-b-0">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="font-medium">
+                          <span className="font-medium text-gray-900">
                             {(review as any).buyer?.full_name || 'Anonymous'}
                           </span>
                           <div className="flex">

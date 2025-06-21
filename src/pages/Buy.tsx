@@ -1,4 +1,3 @@
-
 import React from 'react';
 import ProductGrid from '@/components/products/ProductGrid';
 
@@ -9,13 +8,13 @@ const Buy = () => {
       <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white py-16">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            Shop Sustainable Fashion
+            Discover Sustainable Fashion
           </h1>
           <p className="text-xl mb-8 max-w-2xl mx-auto">
-            Discover unique, pre-loved fashion pieces and give them a new life while reducing environmental impact.
+            Browse unique, pre-loved fashion pieces from sellers in your area. Give items a new life while reducing environmental impact.
           </p>
           <div className="text-lg opacity-90">
-            Browse all available items • Make offers • Connect with sellers
+            Browse all available items • Make offers • Connect with sellers • Leave reviews
           </div>
         </div>
       </div>

@@ -1,4 +1,3 @@
-
 -- Add missing columns to profiles table for complete user data
 ALTER TABLE public.profiles 
 ADD COLUMN IF NOT EXISTS phone TEXT,
@@ -56,8 +55,8 @@ CREATE TRIGGER update_listing_count_trigger
 DROP POLICY IF EXISTS "Anyone can view active products" ON public.products;
 DROP POLICY IF EXISTS "Sellers can manage own products" ON public.products;
 
-CREATE POLICY "Anyone can view active products" ON public.products 
-FOR SELECT USING (status = 'active');
+CREATE POLICY "Anyone can view all products" ON public.products 
+FOR SELECT USING (true);
 
 CREATE POLICY "Sellers can manage own products" ON public.products 
 FOR ALL USING (auth.uid() = seller_id);
