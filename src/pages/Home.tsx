@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Users, Recycle, Shield, Star, Zap, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,21 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import LocationSelector from '@/components/LocationSelector';
 
+const countries = [
+  { code: 'IN', name: 'India', flag: '🇮🇳' },
+  { code: 'US', name: 'USA', flag: '🇺🇸' },
+  { code: 'UK', name: 'UK', flag: '🇬🇧' },
+  { code: 'AU', name: 'Australia', flag: '🇦🇺' },
+  { code: 'CA', name: 'Canada', flag: '🇨🇦' },
+  { code: 'UAE', name: 'UAE', flag: '🇦🇪' },
+];
+
 const Home = () => {
+  // State for location selector
+  const [country, setCountry] = useState('IN');
+  const [city, setCity] = useState('Delhi');
+  const countryObj = countries.find((c) => c.code === country);
+
   const featuredProducts = [
     {
       id: 1,
@@ -76,112 +90,68 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-300">
-      <LocationSelector />
-      
+      {/* Location Selector Section */}
+      <div className="w-full flex flex-col items-center justify-center px-4 py-6 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-gray-800 dark:to-gray-700 border-b border-purple-100 dark:border-gray-600 transition-colors duration-300">
+        <div className="w-full flex flex-col sm:flex-row items-center justify-center gap-3">
+          <LocationSelector/>
+        </div>
+      </div>
+
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-purple-100 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-12 sm:py-16 lg:py-24 overflow-hidden hero-dark">
-        <div className="absolute inset-0 opacity-50 dark:opacity-30" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239333ea' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-        }}></div>
-        <div className="container mx-auto px-4 relative">
+      <section className="relative py-12 sm:py-16 lg:py-24 overflow-hidden">
+        <div className="absolute inset-0 w-full h-full">
+          <img src="/hero.jpg" alt="Fashion background" className="w-full h-full object-cover object-center" />
+          <div className="absolute inset-0 bg-black/60 dark:bg-black/70" />
+        </div>
+        <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
-            <div className="flex justify-center mb-6">
-              <Badge className="bg-gradient-to-r from-purple-600 to-blue-600 dark:from-purple-500 dark:to-blue-500 text-white px-4 py-2 text-sm font-medium neon-glow">
-                <Crown className="w-4 h-4 mr-2" />
-                Curated Luxury & Streetwear
-              </Badge>
-            </div>
-            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
-              Hunt for{' '}
-              <span className="bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 dark:from-purple-400 dark:via-blue-400 dark:to-cyan-400 bg-clip-text text-transparent gradient-text neon-text">
-                Rare Drops
-              </span>
-              <br className="hidden sm:block" />
-              <span className="text-2xl sm:text-3xl lg:text-4xl text-gray-600 dark:text-gray-300 font-medium">that others can't find</span>
+            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold text-white mb-6 leading-tight drop-shadow-xl">
+              Hunt for Rare Drops Close to You
             </h1>
-            <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed">
-              India's most exclusive marketplace for limited edition sneakers, designer watches, 
-              rare streetwear, and luxury fashion. Verified authenticity, unbeatable prices.
+            <p className="text-lg sm:text-xl text-gray-100 mb-8 max-w-3xl mx-auto leading-relaxed drop-shadow">
+              Discover curated, limited‑edition fashion in your city. Sustainable, authentic, community-powered.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Button asChild size="lg" className="bg-gradient-to-r from-purple-600 to-blue-600 dark:from-purple-500 dark:to-blue-500 hover:from-purple-700 hover:to-blue-700 dark:hover:from-purple-400 dark:hover:to-blue-400 text-white px-8 py-4 text-lg font-semibold rounded-full shadow-lg hover:shadow-xl dark:shadow-purple-500/25 dark:hover:shadow-purple-500/40 transition-all duration-300 transform hover:scale-105 btn-neon">
+              <Button asChild size="lg" className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8 py-4 text-lg font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
                 <Link to="/buy">
-                  <Zap className="mr-2 w-5 h-5" />
-                  Start Hunting <ArrowRight className="ml-2 w-5 h-5" />
+                  Browse Rare Finds <ArrowRight className="ml-2 w-5 h-5" />
                 </Link>
               </Button>
-              <Button asChild variant="outline" size="lg" className="border-2 border-purple-600 dark:border-purple-400 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 px-8 py-4 text-lg font-semibold rounded-full dark:bg-transparent dark:hover:border-purple-300 transition-all duration-300">
+              <Button asChild variant="outline" size="lg" className="border-2 border-purple-600 text-purple-600 hover:bg-purple-50 px-8 py-4 text-lg font-semibold rounded-full">
                 <Link to="/sell">
-                  Flip Your Grails
+                  Sell Your Grails
                 </Link>
               </Button>
             </div>
-            
-            {/* Stats */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-8 mt-12 pt-8 border-t border-gray-200 dark:border-gray-700">
-              <div className="text-center">
-                <div className="text-2xl sm:text-3xl font-bold text-purple-600 dark:text-purple-400 stat-number">2K+</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Rare Items</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400 stat-number">95%</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Authentic</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl sm:text-3xl font-bold text-indigo-600 dark:text-indigo-400 stat-number">₹50L+</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Traded</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl sm:text-3xl font-bold text-purple-600 dark:text-purple-400 stat-number">4.9★</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Rating</div>
-              </div>
-            </div>
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-12 sm:py-16 lg:py-20 bg-white dark:bg-gray-900">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4">Why Gen-Z Trusts Dapper</h2>
-            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              We're not just another resale app. We're the culture.
-            </p>
+      {/* Metrics Section */}
+      <section className="container mx-auto px-4 pt-8 pb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-8 border-t border-gray-200 dark:border-gray-700 pt-8">
+          <div className="text-center">
+            <div className="text-2xl sm:text-3xl font-bold text-purple-600 dark:text-purple-400">2K+ Items Listed</div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
-            <div className="text-center group">
-              <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-blue-500 dark:from-purple-400 dark:to-blue-400 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg feature-icon">
-                <Shield className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-white">100% Authentic</h3>
-              <p className="text-gray-600 dark:text-gray-300 leading-relaxed">Every piece is verified by our authentication team. No fakes, no stress, just real heat.</p>
-            </div>
-            <div className="text-center group">
-              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-500 dark:from-green-400 dark:to-emerald-400 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg feature-icon">
-                <Recycle className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-white">Sustainable Flex</h3>
-              <p className="text-gray-600 dark:text-gray-300 leading-relaxed">Rock rare pieces while keeping fashion circular. Good for the planet, better for your wallet.</p>
-            </div>
-            <div className="text-center group">
-              <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 dark:from-orange-400 dark:to-red-400 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg feature-icon">
-                <Users className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-white">Community Driven</h3>
-              <p className="text-gray-600 dark:text-gray-300 leading-relaxed">Connect with real collectors, sneakerheads, and fashion enthusiasts who share your passion.</p>
-            </div>
+          <div className="text-center">
+            <div className="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400">95% Verified Authenticity</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl sm:text-3xl font-bold text-indigo-600 dark:text-indigo-400">₹50L+ Traded So Far</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl sm:text-3xl font-bold text-purple-600 dark:text-purple-400">4.9★ Seller Rating</div>
           </div>
         </div>
       </section>
 
-      {/* Featured Products */}
+      {/* Featured Listings Section */}
       <section className="py-12 sm:py-16 lg:py-20 bg-gray-50 dark:bg-gray-800">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4">Today's Heat</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4">Featured in {city}</h2>
             <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              Discover limited drops and rare finds that you won't see anywhere else
+              Handpicked and promoted—these are the hottest drops locally.
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -230,6 +200,50 @@ const Home = () => {
         </div>
       </section>
 
+      {/* About / Mission Section */}
+      <section className="py-12 sm:py-16 lg:py-20 bg-white dark:bg-gray-900">
+        <div className="container mx-auto px-4">
+          <div className="max-w-3xl mx-auto text-center mb-10">
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4">Why We Created Dapper</h2>
+            <p className="text-lg text-gray-700 dark:text-gray-300 mb-4">
+              Fast fashion is the world's second-most polluting industry. At Dapper, we believe clothing shouldn't end up in landfills—it deserves a second life.
+            </p>
+            <p className="text-lg text-gray-700 dark:text-gray-300 mb-6">
+              We're launching in cities like Delhi, Bengaluru, and Dehradun to reduce textile waste and bring sustainable fashion to everyone.
+            </p>
+            <ul className="text-left list-disc list-inside text-gray-700 dark:text-gray-300 mb-6">
+              <li>Extend clothing lifecycle</li>
+              <li>Offer sustainable style at affordable prices</li>
+              <li>Build conscious communities across Indian cities</li>
+            </ul>
+            <Button asChild size="lg" className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-8 py-4 text-lg font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-300">
+              <Link to="/about">
+                Learn About Our Story <ArrowRight className="ml-2 w-5 h-5" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Mid-page Conversion Callout */}
+      <section className="py-10 bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 dark:from-purple-700 dark:via-blue-700 dark:to-indigo-700 text-white relative overflow-hidden">
+        <div className="container mx-auto px-4 text-center relative z-10">
+          <h2 className="text-2xl sm:text-3xl font-bold mb-6">Ready to Elevate Your Style—or Your Income?</h2>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <Button asChild size="lg" className="bg-white text-purple-600 hover:bg-gray-100 px-8 py-4 text-lg font-bold rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+              <Link to="/sell">
+                Sell Your Signature Drops
+              </Link>
+            </Button>
+            <Button asChild size="lg" variant="outline" className="border-2 border-white text-white hover:bg-white/10 px-8 py-4 text-lg font-bold rounded-full">
+              <Link to="/buy">
+                Explore Rare Finds Now
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
       {/* Testimonials */}
       <section className="py-12 sm:py-16 lg:py-20 bg-white dark:bg-gray-900">
         <div className="container mx-auto px-4">
@@ -258,22 +272,6 @@ const Home = () => {
               </Card>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 dark:from-purple-500 dark:via-blue-500 dark:to-indigo-500 text-white relative overflow-hidden cta-dark">
-        <div className="absolute inset-0 bg-black/20 dark:bg-black/10"></div>
-        <div className="container mx-auto px-4 text-center relative z-10">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4">Ready to Level Up Your Style?</h2>
-          <p className="text-xl mb-8 text-purple-100 dark:text-purple-200 max-w-2xl mx-auto">
-            Join thousands of collectors, sneakerheads, and fashion enthusiasts
-          </p>
-          <Button asChild size="lg" variant="secondary" className="bg-white text-purple-600 hover:bg-gray-100 dark:bg-gray-900 dark:text-purple-400 dark:hover:bg-gray-800 px-8 py-4 text-lg font-bold rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 neon-glow-blue">
-            <Link to="/signin">
-              Join the Culture <ArrowRight className="ml-2 w-5 h-5" />
-            </Link>
-          </Button>
         </div>
       </section>
     </div>
