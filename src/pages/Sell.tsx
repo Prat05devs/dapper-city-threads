@@ -1,880 +1,340 @@
+
 import React, { useState, useEffect } from 'react';
-import { Plus, Star, Edit, Trash2, Eye, TrendingUp, CreditCard, AlertCircle, MessageSquare, Check, X, Reply } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import ImageUpload from '@/components/products/ImageUpload';
-import StripeConnectButton from '@/components/payments/StripeConnectButton';
-import ListingPaymentButton from '@/components/payments/ListingPaymentButton';
+import { useToast } from '@/hooks/use-toast';
+import { Check, X, MessageSquare } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import ProductForm from '@/components/products/ProductForm';
 
-const categories = [
-  'Electronics', 'Clothing', 'Home & Garden', 'Sports', 'Books', 
-  'Toys', 'Automotive', 'Health & Beauty', 'Jewelry', 'Other'
-];
+interface Bid {
+  id: string;
+  amount: number;
+  message: string;
+  created_at: string;
+  buyer_id: string;
+  status: string;
+  profiles: {
+    full_name: string;
+    email: string;
+  };
+}
 
-const conditions = ['Fair', 'Good', 'As New'];
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  image_urls: string[];
+  status: string;
+  created_at: string;
+  bids: Bid[];
+}
 
 const Sell = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [products, setProducts] = useState([]);
-  const [bids, setBids] = useState([]);
-  const [isAddingProduct, setIsAddingProduct] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [profile, setProfile] = useState(null);
-  const [selectedBid, setSelectedBid] = useState(null);
-  const [counterAmount, setCounterAmount] = useState('');
-  const [responseMessage, setResponseMessage] = useState('');
-  
-  // Form state
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    price: '',
-    category: '',
-    condition: '',
-    imageUrls: []
-  });
+  const [counterOffers, setCounterOffers] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
     if (user) {
-      fetchProducts();
-      fetchProfile();
-      fetchBids();
+      fetchSellerProducts();
     }
   }, [user]);
 
-  const fetchProducts = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('seller_id', user?.id)
-        .order('created_at', { ascending: false });
+  const fetchSellerProducts = async () => {
+    if (!user) return;
 
-      if (error) {
-        console.error('Error fetching products:', error);
-        throw error;
-      }
-      
-      console.log('Fetched products:', data);
-      setProducts(data || []);
-    } catch (error) {
-      console.error('Error fetching products:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load your products",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+    setLoading(true);
+    
+    const { data: productsData, error } = await supabase
+      .from('products')
+      .select(`
+        id,
+        name,
+        price,
+        image_urls,
+        status,
+        created_at,
+        bids!inner (
+          id,
+          amount,
+          message,
+          created_at,
+          buyer_id,
+          status,
+          profiles!bids_buyer_id_fkey (
+            full_name,
+            email
+          )
+        )
+      `)
+      .eq('seller_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (productsData && !error) {
+      setProducts(productsData as any);
     }
+
+    setLoading(false);
   };
 
-  const fetchBids = async () => {
+  const handleBidAction = async (bidId: string, action: 'accept' | 'reject', productId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('bids')
-        .select(`
-          *,
-          product:products!inner(name, price, image_urls),
-          buyer:profiles!buyer_id(full_name, email)
-        `)
-        .eq('products.seller_id', user?.id)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching bids:', error);
-        throw error;
-      }
-      
-      console.log('Fetched bids:', data);
-      setBids(data || []);
-    } catch (error) {
-      console.error('Error fetching bids:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load bids",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const fetchProfile = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user?.id)
-        .single();
-
-      if (error) {
-        console.error('Error fetching profile:', error);
-        throw error;
-      }
-      
-      console.log('Fetched profile:', data);
-      setProfile(data);
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-    }
-  };
-
-  const handleBidResponse = async (bidId, action, counterAmount = null, message = '') => {
-    try {
-      let updateData = {
-        status: action,
-        updated_at: new Date().toISOString()
-      };
-
-      if (action === 'countered' && counterAmount) {
-        updateData.counter_amount = parseFloat(counterAmount);
-      }
-
       const { error } = await supabase
         .from('bids')
-        .update(updateData)
+        .update({ 
+          status: action === 'accept' ? 'accepted' : 'rejected',
+          updated_at: new Date().toISOString()
+        })
         .eq('id', bidId);
 
       if (error) throw error;
 
       // Create notification for buyer
-      const bid = bids.find(b => b.id === bidId);
+      const bid = products.flatMap(p => p.bids).find(b => b.id === bidId);
       if (bid) {
-        let notificationTitle = '';
-        let notificationMessage = '';
-
-        switch (action) {
-          case 'accepted':
-            notificationTitle = 'Bid Accepted!';
-            notificationMessage = `Your bid of ₹${bid.amount} for "${bid.product.name}" has been accepted!`;
-            break;
-          case 'rejected':
-            notificationTitle = 'Bid Rejected';
-            notificationMessage = `Your bid of ₹${bid.amount} for "${bid.product.name}" has been rejected.`;
-            break;
-          case 'countered':
-            notificationTitle = 'Counter Offer Received';
-            notificationMessage = `The seller has countered your bid of ₹${bid.amount} with ₹${counterAmount} for "${bid.product.name}".`;
-            break;
-        }
-
         await supabase
           .from('notifications')
           .insert({
             user_id: bid.buyer_id,
-            type: `bid_${action}`,
-            title: notificationTitle,
-            message: notificationMessage + (message ? ` Message: "${message}"` : ''),
+            type: action === 'accept' ? 'bid_accepted' : 'bid_rejected',
+            title: action === 'accept' ? 'Bid Accepted!' : 'Bid Rejected',
+            message: action === 'accept' 
+              ? `Your bid has been accepted! You can now complete the payment.`
+              : `Your bid has been rejected. Try submitting a different offer.`,
             related_id: bidId,
           });
       }
 
       toast({
-        title: "Success!",
-        description: `Bid ${action} successfully.`,
+        title: `Bid ${action}ed!`,
+        description: `The bid has been ${action}ed successfully.`,
       });
 
-      fetchBids();
-      setSelectedBid(null);
-      setCounterAmount('');
-      setResponseMessage('');
+      fetchSellerProducts();
     } catch (error) {
-      console.error('Error responding to bid:', error);
+      console.error(`Error ${action}ing bid:`, error);
       toast({
         title: "Error",
-        description: "Failed to respond to bid",
+        description: `Failed to ${action} the bid.`,
         variant: "destructive",
       });
     }
   };
 
-  const canCreateFreeListing = () => {
-    return profile && (profile.free_listings_used || 0) < 3;
-  };
-
-  const needsListingPayment = () => {
-    return profile && (profile.free_listings_used || 0) >= 3;
-  };
-
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      description: '',
-      price: '',
-      category: '',
-      condition: '',
-      imageUrls: []
-    });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!user) {
+  const handleCounterOffer = async (bidId: string, productId: string) => {
+    const counterAmount = counterOffers[bidId];
+    if (!counterAmount) {
       toast({
-        title: "Authentication Required",
-        description: "Please sign in to create a product listing.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Validate required fields
-    if (!formData.name || !formData.price || !formData.category || !formData.condition) {
-      toast({
-        title: "Missing Information",
-        description: "Please fill in all required fields.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Check if user needs to pay for listing
-    if (needsListingPayment()) {
-      toast({
-        title: "Payment Required",
-        description: "You have used all your free listings. Please pay the listing fee to continue.",
+        title: "Error",
+        description: "Please enter a counter offer amount.",
         variant: "destructive",
       });
       return;
     }
 
     try {
-      setSubmitting(true);
-      console.log('Creating product with data:', formData);
-      
-      const productData = {
-        name: formData.name,
-        description: formData.description || '',
-        price: parseFloat(formData.price),
-        category: formData.category,
-        condition: formData.condition,
-        seller_id: user.id,
-        image_urls: formData.imageUrls,
-        status: 'active',
-        listing_type: 'free',
-        payment_status: 'completed'
-      };
-
-      console.log('Inserting product data:', productData);
-
-      const { data, error } = await supabase
-        .from('products')
-        .insert([productData])
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Product creation error:', error);
-        throw error;
-      }
-
-      console.log('Product created successfully:', data);
-
-      toast({
-        title: "Success!",
-        description: "Your product has been listed successfully.",
-      });
-
-      resetForm();
-      setIsAddingProduct(false);
-      await fetchProducts();
-      await fetchProfile();
-    } catch (error) {
-      console.error('Error creating product:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create product listing",
-        variant: "destructive",
-      });
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const deleteProduct = async (productId) => {
-    try {
+      // Update the existing bid with counter offer
       const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', productId);
+        .from('bids')
+        .update({ 
+          amount: Number(counterAmount),
+          status: 'pending',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', bidId);
 
       if (error) throw error;
 
+      // Create notification for buyer
+      const bid = products.flatMap(p => p.bids).find(b => b.id === bidId);
+      if (bid) {
+        await supabase
+          .from('notifications')
+          .insert({
+            user_id: bid.buyer_id,
+            type: 'counter_offer',
+            title: 'Counter Offer Received',
+            message: `Seller has made a counter offer of ₹${counterAmount}`,
+            related_id: bidId,
+          });
+      }
+
       toast({
-        title: "Success!",
-        description: "Product deleted successfully.",
+        title: "Counter offer sent!",
+        description: "Your counter offer has been sent to the buyer.",
       });
-      
-      fetchProducts();
+
+      setCounterOffers(prev => ({ ...prev, [bidId]: '' }));
+      fetchSellerProducts();
     } catch (error) {
-      console.error('Error deleting product:', error);
+      console.error('Error sending counter offer:', error);
       toast({
         title: "Error",
-        description: "Failed to delete product",
+        description: "Failed to send counter offer.",
         variant: "destructive",
       });
     }
   };
 
-  const openProductModal = (product) => {
-    const modal = document.createElement('div');
-    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
-    modal.innerHTML = `
-      <div class="bg-white rounded-lg p-4 sm:p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <img src="${product.image_urls?.[0] || '/placeholder.svg'}" alt="${product.name}" class="w-full h-48 object-cover rounded mb-4">
-        <h3 class="text-lg font-semibold mb-2">${product.name}</h3>
-        <p class="text-gray-600 mb-2">${product.description || 'No description'}</p>
-        <p class="text-lg font-bold text-green-600 mb-4">₹${product.price}</p>
-        <button class="w-full px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors" onclick="this.closest('.fixed').remove()">Close</button>
-      </div>
-    `;
-    
-    document.body.appendChild(modal);
-    
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) {
-        document.body.removeChild(modal);
-      }
-    });
-  };
-
-  const getStatusColor = (status) => {
+  const getBidStatusBadge = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'accepted': return 'bg-green-100 text-green-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
-      case 'countered': return 'bg-blue-100 text-blue-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'accepted':
+        return <Badge className="bg-green-100 text-green-800">Accepted</Badge>;
+      case 'rejected':
+        return <Badge variant="destructive">Rejected</Badge>;
+      case 'pending':
+        return <Badge variant="outline">Pending</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
     }
   };
 
-  const pendingBids = bids.filter(bid => bid.status === 'pending');
-  const respondedBids = bids.filter(bid => bid.status !== 'pending');
-
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <Card className="max-w-md w-full">
-          <CardContent className="p-6 text-center">
-            <h2 className="text-xl font-semibold mb-4">Please Sign In</h2>
-            <p className="text-gray-600">You need to be signed in to access the seller dashboard.</p>
-          </CardContent>
-        </Card>
+      <div className="container mx-auto px-4 py-8 text-center">
+        <h1 className="text-2xl font-bold mb-4">Please sign in to sell products</h1>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8 text-center">
+        <p>Loading your products...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-4 sm:py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Seller Dashboard</h1>
-          <p className="text-gray-600">Manage your product listings, bids, and sales</p>
-        </div>
-
-        {/* Stripe Connect Alert */}
-        {profile && !profile.stripe_onboarding_completed && (
-          <Alert className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="flex flex-col sm:flex-row sm:items-center gap-4">
-              <span>Connect your Stripe account to receive payments from sales.</span>
-              <StripeConnectButton onSuccess={fetchProfile} />
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
-          <Card>
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Plus className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Listings</p>
-                  <p className="text-xl sm:text-2xl font-bold text-gray-900">{products.length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Sales</p>
-                  <p className="text-xl sm:text-2xl font-bold text-gray-900">{profile?.total_sales || 0}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-yellow-100 rounded-lg">
-                  <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Pending Bids</p>
-                  <p className="text-xl sm:text-2xl font-bold text-gray-900">{pendingBids.length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <Star className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Average Rating</p>
-                  <p className="text-xl sm:text-2xl font-bold text-gray-900">{profile?.average_rating?.toFixed(1) || '0.0'}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Main Content Tabs */}
-        <Tabs defaultValue="products" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="products" className="flex items-center space-x-2">
-              <Plus className="w-4 h-4" />
-              <span>My Products</span>
-            </TabsTrigger>
-            <TabsTrigger value="bids" className="flex items-center space-x-2">
-              <MessageSquare className="w-4 h-4" />
-              <span>Bids ({pendingBids.length})</span>
-            </TabsTrigger>
-            <TabsTrigger value="history" className="flex items-center space-x-2">
-              <TrendingUp className="w-4 h-4" />
-              <span>History</span>
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Products Tab */}
-          <TabsContent value="products" className="space-y-6">
-            {/* Add Product Section */}
-            <div className="mb-6">
-              {canCreateFreeListing() ? (
-                <Dialog open={isAddingProduct} onOpenChange={setIsAddingProduct}>
-                  <DialogTrigger asChild>
-                    <Button className="w-full sm:w-auto bg-green-600 hover:bg-green-700">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add New Product (Free)
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto mx-4">
-                    <DialogHeader>
-                      <DialogTitle>Add New Product</DialogTitle>
-                    </DialogHeader>
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                      <div>
-                        <Label htmlFor="name">Product Name *</Label>
-                        <Input
-                          id="name"
-                          value={formData.name}
-                          onChange={(e) => setFormData({...formData, name: e.target.value})}
-                          required
-                          placeholder="Enter product name"
-                        />
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-8">Sell Your Products</h1>
+      
+      <Tabs defaultValue="list" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="list">List New Product</TabsTrigger>
+          <TabsTrigger value="manage">Manage Products & Bids</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="list">
+          <ProductForm onSuccess={fetchSellerProducts} />
+        </TabsContent>
+        
+        <TabsContent value="manage" className="space-y-4">
+          {products.length === 0 ? (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <p className="text-muted-foreground">No products with bids found.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            products.map((product) => (
+              <Card key={product.id}>
+                <CardHeader>
+                  <CardTitle className="text-lg">{product.name}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-start space-x-4 mb-4">
+                    <img
+                      src={product.image_urls?.[0] || '/placeholder.svg'}
+                      alt={product.name}
+                      className="w-20 h-20 object-cover rounded"
+                    />
+                    <div className="flex-1">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm text-muted-foreground">Asking price:</span>
+                        <span className="font-semibold">₹{product.price}</span>
                       </div>
-
-                      <div>
-                        <Label htmlFor="description">Description</Label>
-                        <Textarea
-                          id="description"
-                          value={formData.description}
-                          onChange={(e) => setFormData({...formData, description: e.target.value})}
-                          rows={3}
-                          placeholder="Describe your product"
-                        />
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Bids received:</span>
+                        <span>{product.bids.length}</span>
                       </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="price">Price (₹) *</Label>
-                          <Input
-                            id="price"
-                            type="number"
-                            value={formData.price}
-                            onChange={(e) => setFormData({...formData, price: e.target.value})}
-                            required
-                            min="0"
-                            step="0.01"
-                            placeholder="0.00"
-                          />
-                        </div>
-
-                        <div>
-                          <Label htmlFor="condition">Condition *</Label>
-                          <Select value={formData.condition} onValueChange={(value) => setFormData({...formData, condition: value})}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select condition" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {conditions.map((condition) => (
-                                <SelectItem key={condition} value={condition}>{condition}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label htmlFor="category">Category *</Label>
-                        <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select category" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {categories.map((category) => (
-                              <SelectItem key={category} value={category}>{category}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <ImageUpload
-                        onImagesChange={(urls) => setFormData({...formData, imageUrls: urls})}
-                        existingImages={formData.imageUrls}
-                      />
-
-                      <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2">
-                        <Button type="button" variant="outline" onClick={() => {
-                          setIsAddingProduct(false);
-                          resetForm();
-                        }}>
-                          Cancel
-                        </Button>
-                        <Button type="submit" disabled={submitting}>
-                          {submitting ? 'Creating...' : 'Create Product'}
-                        </Button>
-                      </div>
-                    </form>
-                  </DialogContent>
-                </Dialog>
-              ) : (
-                <div className="space-y-4">
-                  <Alert>
-                    <CreditCard className="h-4 w-4" />
-                    <AlertDescription>
-                      You have used all your free listings. Pay ₹30 to create additional listings.
-                    </AlertDescription>
-                  </Alert>
-                  <ListingPaymentButton type="listing_fee" />
-                </div>
-              )}
-            </div>
-
-            {/* Products Grid */}
-            {loading ? (
-              <div className="text-center py-12">
-                <p className="text-gray-600">Loading your products...</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                {products.map((product) => (
-                  <Card key={product.id} className="overflow-hidden">
-                    <div className="relative">
-                      <img
-                        src={product.image_urls?.[0] || '/placeholder.svg'}
-                        alt={product.name}
-                        className="w-full h-48 object-cover"
-                      />
-                      {product.is_featured && (
-                        <Badge className="absolute top-2 left-2 bg-yellow-500">
-                          <Star className="w-3 h-3 mr-1" />
-                          Featured
-                        </Badge>
-                      )}
                     </div>
-                    <CardContent className="p-4">
-                      <h3 className="font-semibold text-base sm:text-lg mb-2 line-clamp-1">{product.name}</h3>
-                      <p className="text-gray-600 text-sm mb-2 line-clamp-2">{product.description}</p>
-                      <p className="text-lg sm:text-xl font-bold text-green-600 mb-4">₹{product.price}</p>
-                      
-                      <div className="space-y-3">
-                        <div className="flex flex-wrap gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => openProductModal(product)}
-                            className="flex-1 min-w-0"
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            View
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => deleteProduct(product.id)}
-                            className="flex-1 min-w-0"
-                          >
-                            <Trash2 className="h-4 w-4 mr-1" />
-                            Delete
-                          </Button>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h4 className="font-medium">Bids:</h4>
+                    {product.bids.map((bid) => (
+                      <div key={bid.id} className="border rounded-lg p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">{bid.profiles.full_name}</p>
+                            <p className="text-sm text-muted-foreground">{bid.profiles.email}</p>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-lg font-bold">₹{bid.amount}</div>
+                            {getBidStatusBadge(bid.status)}
+                          </div>
                         </div>
-                        
-                        {!product.is_featured && (
-                          <div className="space-y-2">
-                            <ListingPaymentButton 
-                              type="featured_3_days" 
-                              productId={product.id}
-                            >
-                              Feature 3 days - ₹100
-                            </ListingPaymentButton>
-                            <ListingPaymentButton 
-                              type="featured_7_days" 
-                              productId={product.id}
-                            >
-                              Feature 7 days - ₹200
-                            </ListingPaymentButton>
+
+                        {bid.message && (
+                          <div className="bg-gray-50 p-3 rounded">
+                            <p className="text-sm">{bid.message}</p>
                           </div>
                         )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
 
-            {products.length === 0 && !loading && (
-              <div className="text-center py-12">
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No products yet</h3>
-                <p className="text-gray-600">Start by adding your first product to sell!</p>
-              </div>
-            )}
-          </TabsContent>
-
-          {/* Bids Tab */}
-          <TabsContent value="bids" className="space-y-6">
-            <div className="space-y-6">
-              <h2 className="text-xl font-semibold">Pending Bids ({pendingBids.length})</h2>
-              
-              {pendingBids.length === 0 ? (
-                <Card>
-                  <CardContent className="p-8 text-center">
-                    <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No pending bids</h3>
-                    <p className="text-gray-600">When buyers place bids on your products, they'll appear here.</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="space-y-4">
-                  {pendingBids.map((bid) => (
-                    <Card key={bid.id}>
-                      <CardContent className="p-6">
-                        <div className="flex flex-col lg:flex-row gap-6">
-                          <div className="flex-shrink-0">
-                            <img
-                              src={bid.product?.image_urls?.[0] || '/placeholder.svg'}
-                              alt={bid.product?.name}
-                              className="w-24 h-24 object-cover rounded-lg"
-                            />
-                          </div>
-                          
-                          <div className="flex-1 space-y-4">
-                            <div>
-                              <h3 className="text-lg font-semibold">{bid.product?.name}</h3>
-                              <p className="text-gray-600">Listed at ₹{bid.product?.price}</p>
-                            </div>
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div>
-                                <p className="text-sm text-gray-600">Buyer</p>
-                                <p className="font-medium">{bid.buyer?.full_name || 'Anonymous'}</p>
-                              </div>
-                              <div>
-                                <p className="text-sm text-gray-600">Bid Amount</p>
-                                <p className="text-xl font-bold text-green-600">₹{bid.amount}</p>
-                              </div>
-                            </div>
-                            
-                            {bid.message && (
-                              <div>
-                                <p className="text-sm text-gray-600">Message</p>
-                                <p className="text-gray-800 bg-gray-50 p-3 rounded-lg">{bid.message}</p>
-                              </div>
-                            )}
-                            
-                            <div className="flex flex-wrap gap-2">
-                              <Button
-                                onClick={() => handleBidResponse(bid.id, 'accepted')}
+                        {bid.status === 'pending' && (
+                          <div className="space-y-3">
+                            <div className="flex gap-2">
+                              <Button 
+                                onClick={() => handleBidAction(bid.id, 'accept', product.id)}
+                                size="sm"
                                 className="bg-green-600 hover:bg-green-700"
                               >
-                                <Check className="w-4 h-4 mr-2" />
+                                <Check className="w-4 h-4 mr-1" />
                                 Accept
                               </Button>
-                              <Button
-                                onClick={() => handleBidResponse(bid.id, 'rejected')}
+                              <Button 
+                                onClick={() => handleBidAction(bid.id, 'reject', product.id)}
+                                size="sm"
                                 variant="destructive"
                               >
-                                <X className="w-4 h-4 mr-2" />
+                                <X className="w-4 h-4 mr-1" />
                                 Reject
                               </Button>
-                              <Button
-                                onClick={() => setSelectedBid(bid)}
+                            </div>
+
+                            <div className="flex gap-2">
+                              <input
+                                type="number"
+                                placeholder="Counter offer amount"
+                                value={counterOffers[bid.id] || ''}
+                                onChange={(e) => setCounterOffers(prev => ({ 
+                                  ...prev, 
+                                  [bid.id]: e.target.value 
+                                }))}
+                                className="flex-1 px-3 py-2 border rounded-md"
+                              />
+                              <Button 
+                                onClick={() => handleCounterOffer(bid.id, product.id)}
+                                size="sm"
                                 variant="outline"
                               >
-                                <Reply className="w-4 h-4 mr-2" />
+                                <MessageSquare className="w-4 h-4 mr-1" />
                                 Counter Offer
                               </Button>
                             </div>
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </div>
-          </TabsContent>
+                        )}
 
-          {/* History Tab */}
-          <TabsContent value="history" className="space-y-6">
-            <div className="space-y-6">
-              <h2 className="text-xl font-semibold">Bid History</h2>
-              
-              {respondedBids.length === 0 ? (
-                <Card>
-                  <CardContent className="p-8 text-center">
-                    <TrendingUp className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No bid history</h3>
-                    <p className="text-gray-600">Your responded bids will appear here.</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="space-y-4">
-                  {respondedBids.map((bid) => (
-                    <Card key={bid.id}>
-                      <CardContent className="p-6">
-                        <div className="flex flex-col lg:flex-row gap-6">
-                          <div className="flex-shrink-0">
-                            <img
-                              src={bid.product?.image_urls?.[0] || '/placeholder.svg'}
-                              alt={bid.product?.name}
-                              className="w-20 h-20 object-cover rounded-lg"
-                            />
-                          </div>
-                          
-                          <div className="flex-1">
-                            <div className="flex justify-between items-start mb-2">
-                              <h3 className="text-lg font-semibold">{bid.product?.name}</h3>
-                              <Badge className={getStatusColor(bid.status)}>
-                                {bid.status}
-                              </Badge>
-                            </div>
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                              <div>
-                                <p className="text-gray-600">Buyer</p>
-                                <p className="font-medium">{bid.buyer?.full_name || 'Anonymous'}</p>
-                              </div>
-                              <div>
-                                <p className="text-gray-600">Original Bid</p>
-                                <p className="font-medium">₹{bid.amount}</p>
-                              </div>
-                              {bid.counter_amount && (
-                                <div>
-                                  <p className="text-gray-600">Counter Offer</p>
-                                  <p className="font-medium">₹{bid.counter_amount}</p>
-                                </div>
-                              )}
-                            </div>
-                            
-                            <p className="text-xs text-gray-500 mt-2">
-                              {new Date(bid.updated_at).toLocaleDateString()} at {new Date(bid.updated_at).toLocaleTimeString()}
-                            </p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
-
-        {/* Counter Offer Dialog */}
-        <Dialog open={!!selectedBid} onOpenChange={() => setSelectedBid(null)}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Counter Offer</DialogTitle>
-            </DialogHeader>
-            {selectedBid && (
-              <div className="space-y-4">
-                <div>
-                  <p className="text-sm text-gray-600">Product: {selectedBid.product?.name}</p>
-                  <p className="text-sm text-gray-600">Original Bid: ₹{selectedBid.amount}</p>
-                  <p className="text-sm text-gray-600">Listed Price: ₹{selectedBid.product?.price}</p>
-                </div>
-                
-                <div>
-                  <Label htmlFor="counterAmount">Counter Offer Amount (₹)</Label>
-                  <Input
-                    id="counterAmount"
-                    type="number"
-                    value={counterAmount}
-                    onChange={(e) => setCounterAmount(e.target.value)}
-                    placeholder="Enter counter amount"
-                    min="0"
-                    step="0.01"
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="responseMessage">Message (Optional)</Label>
-                  <Textarea
-                    id="responseMessage"
-                    value={responseMessage}
-                    onChange={(e) => setResponseMessage(e.target.value)}
-                    placeholder="Add a message to your counter offer..."
-                    rows={3}
-                  />
-                </div>
-                
-                <div className="flex space-x-2">
-                  <Button
-                    onClick={() => handleBidResponse(selectedBid.id, 'countered', counterAmount, responseMessage)}
-                    disabled={!counterAmount}
-                    className="flex-1"
-                  >
-                    Send Counter Offer
-                  </Button>
-                  <Button
-                    onClick={() => setSelectedBid(null)}
-                    variant="outline"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
-      </div>
+                        <p className="text-xs text-muted-foreground">
+                          Bid placed on {new Date(bid.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

@@ -36,7 +36,7 @@ interface Transaction {
   status: string;
   confirmation_status: string;
   created_at: string;
-  product?: {
+  products?: {
     name: string;
     image_urls: string[];
   };
@@ -89,7 +89,7 @@ const MyActivity = () => {
       setBids(bidsData as any);
     }
 
-    // Fetch transactions
+    // Fetch transactions with proper join
     const { data: transactionsData, error: transactionsError } = await supabase
       .from('transactions')
       .select(`
@@ -98,7 +98,7 @@ const MyActivity = () => {
         status,
         confirmation_status,
         created_at,
-        products (
+        products!transactions_product_id_fkey (
           name,
           image_urls
         )
