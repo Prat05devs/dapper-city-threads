@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { Plus, Star, Edit, Trash2, Eye, TrendingUp, CreditCard, AlertCircle } from 'lucide-react';
+import { Plus, Star, Edit, Trash2, Eye, TrendingUp, CreditCard, AlertCircle, MessageSquare, Check, X, Reply } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,10 +28,14 @@ const Sell = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [products, setProducts] = useState([]);
+  const [bids, setBids] = useState([]);
   const [isAddingProduct, setIsAddingProduct] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [profile, setProfile] = useState(null);
+  const [selectedBid, setSelectedBid] = useState(null);
+  const [counterAmount, setCounterAmount] = useState('');
+  const [responseMessage, setResponseMessage] = useState('');
   
   // Form state
   const [formData, setFormData] = useState({
@@ -47,6 +51,7 @@ const Sell = () => {
     if (user) {
       fetchProducts();
       fetchProfile();
+      fetchBids();
     }
   }, [user]);
 
@@ -78,6 +83,35 @@ const Sell = () => {
     }
   };
 
+  const fetchBids = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('bids')
+        .select(`
+          *,
+          product:products!inner(name, price, image_urls),
+          buyer:profiles!buyer_id(full_name, email)
+        `)
+        .eq('products.seller_id', user?.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching bids:', error);
+        throw error;
+      }
+      
+      console.log('Fetched bids:', data);
+      setBids(data || []);
+    } catch (error) {
+      console.error('Error fetching bids:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load bids",
+        variant: "destructive",
+      });
+    }
+  };
+
   const fetchProfile = async () => {
     try {
       const { data, error } = await supabase
@@ -95,6 +129,75 @@ const Sell = () => {
       setProfile(data);
     } catch (error) {
       console.error('Error fetching profile:', error);
+    }
+  };
+
+  const handleBidResponse = async (bidId, action, counterAmount = null, message = '') => {
+    try {
+      let updateData = {
+        status: action,
+        updated_at: new Date().toISOString()
+      };
+
+      if (action === 'countered' && counterAmount) {
+        updateData.counter_amount = parseFloat(counterAmount);
+      }
+
+      const { error } = await supabase
+        .from('bids')
+        .update(updateData)
+        .eq('id', bidId);
+
+      if (error) throw error;
+
+      // Create notification for buyer
+      const bid = bids.find(b => b.id === bidId);
+      if (bid) {
+        let notificationTitle = '';
+        let notificationMessage = '';
+
+        switch (action) {
+          case 'accepted':
+            notificationTitle = 'Bid Accepted!';
+            notificationMessage = `Your bid of ₹${bid.amount} for "${bid.product.name}" has been accepted!`;
+            break;
+          case 'rejected':
+            notificationTitle = 'Bid Rejected';
+            notificationMessage = `Your bid of ₹${bid.amount} for "${bid.product.name}" has been rejected.`;
+            break;
+          case 'countered':
+            notificationTitle = 'Counter Offer Received';
+            notificationMessage = `The seller has countered your bid of ₹${bid.amount} with ₹${counterAmount} for "${bid.product.name}".`;
+            break;
+        }
+
+        await supabase
+          .from('notifications')
+          .insert({
+            user_id: bid.buyer_id,
+            type: `bid_${action}`,
+            title: notificationTitle,
+            message: notificationMessage + (message ? ` Message: "${message}"` : ''),
+            related_id: bidId,
+          });
+      }
+
+      toast({
+        title: "Success!",
+        description: `Bid ${action} successfully.`,
+      });
+
+      fetchBids();
+      setSelectedBid(null);
+      setCounterAmount('');
+      setResponseMessage('');
+    } catch (error) {
+      console.error('Error responding to bid:', error);
+      toast({
+        title: "Error",
+        description: "Failed to respond to bid",
+        variant: "destructive",
+      });
     }
   };
 
@@ -248,6 +351,19 @@ const Sell = () => {
     });
   };
 
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'accepted': return 'bg-green-100 text-green-800';
+      case 'rejected': return 'bg-red-100 text-red-800';
+      case 'countered': return 'bg-blue-100 text-blue-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const pendingBids = bids.filter(bid => bid.status === 'pending');
+  const respondedBids = bids.filter(bid => bid.status !== 'pending');
+
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -266,7 +382,7 @@ const Sell = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Seller Dashboard</h1>
-          <p className="text-gray-600">Manage your product listings and sales</p>
+          <p className="text-gray-600">Manage your product listings, bids, and sales</p>
         </div>
 
         {/* Stripe Connect Alert */}
@@ -314,11 +430,11 @@ const Sell = () => {
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center">
                 <div className="p-2 bg-yellow-100 rounded-lg">
-                  <Star className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600" />
+                  <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Average Rating</p>
-                  <p className="text-xl sm:text-2xl font-bold text-gray-900">{profile?.average_rating?.toFixed(1) || '0.0'}</p>
+                  <p className="text-sm font-medium text-gray-600">Pending Bids</p>
+                  <p className="text-xl sm:text-2xl font-bold text-gray-900">{pendingBids.length}</p>
                 </div>
               </div>
             </CardContent>
@@ -328,208 +444,436 @@ const Sell = () => {
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center">
                 <div className="p-2 bg-purple-100 rounded-lg">
-                  <Eye className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
+                  <Star className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Free Listings</p>
-                  <p className="text-xl sm:text-2xl font-bold text-gray-900">{profile?.free_listings_used || 0}/3</p>
+                  <p className="text-sm font-medium text-gray-600">Average Rating</p>
+                  <p className="text-xl sm:text-2xl font-bold text-gray-900">{profile?.average_rating?.toFixed(1) || '0.0'}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Add Product Section */}
-        <div className="mb-6">
-          {canCreateFreeListing() ? (
-            <Dialog open={isAddingProduct} onOpenChange={setIsAddingProduct}>
-              <DialogTrigger asChild>
-                <Button className="w-full sm:w-auto bg-green-600 hover:bg-green-700">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add New Product (Free)
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto mx-4">
-                <DialogHeader>
-                  <DialogTitle>Add New Product</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <Label htmlFor="name">Product Name *</Label>
-                    <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => setFormData({...formData, name: e.target.value})}
-                      required
-                      placeholder="Enter product name"
-                    />
-                  </div>
+        {/* Main Content Tabs */}
+        <Tabs defaultValue="products" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="products" className="flex items-center space-x-2">
+              <Plus className="w-4 h-4" />
+              <span>My Products</span>
+            </TabsTrigger>
+            <TabsTrigger value="bids" className="flex items-center space-x-2">
+              <MessageSquare className="w-4 h-4" />
+              <span>Bids ({pendingBids.length})</span>
+            </TabsTrigger>
+            <TabsTrigger value="history" className="flex items-center space-x-2">
+              <TrendingUp className="w-4 h-4" />
+              <span>History</span>
+            </TabsTrigger>
+          </TabsList>
 
-                  <div>
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      value={formData.description}
-                      onChange={(e) => setFormData({...formData, description: e.target.value})}
-                      rows={3}
-                      placeholder="Describe your product"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="price">Price (₹) *</Label>
-                      <Input
-                        id="price"
-                        type="number"
-                        value={formData.price}
-                        onChange={(e) => setFormData({...formData, price: e.target.value})}
-                        required
-                        min="0"
-                        step="0.01"
-                        placeholder="0.00"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="condition">Condition *</Label>
-                      <Select value={formData.condition} onValueChange={(value) => setFormData({...formData, condition: value})}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select condition" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {conditions.map((condition) => (
-                            <SelectItem key={condition} value={condition}>{condition}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="category">Category *</Label>
-                    <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((category) => (
-                          <SelectItem key={category} value={category}>{category}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <ImageUpload
-                    onImagesChange={(urls) => setFormData({...formData, imageUrls: urls})}
-                    existingImages={formData.imageUrls}
-                  />
-
-                  <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2">
-                    <Button type="button" variant="outline" onClick={() => {
-                      setIsAddingProduct(false);
-                      resetForm();
-                    }}>
-                      Cancel
+          {/* Products Tab */}
+          <TabsContent value="products" className="space-y-6">
+            {/* Add Product Section */}
+            <div className="mb-6">
+              {canCreateFreeListing() ? (
+                <Dialog open={isAddingProduct} onOpenChange={setIsAddingProduct}>
+                  <DialogTrigger asChild>
+                    <Button className="w-full sm:w-auto bg-green-600 hover:bg-green-700">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add New Product (Free)
                     </Button>
-                    <Button type="submit" disabled={submitting}>
-                      {submitting ? 'Creating...' : 'Create Product'}
-                    </Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
-          ) : (
-            <div className="space-y-4">
-              <Alert>
-                <CreditCard className="h-4 w-4" />
-                <AlertDescription>
-                  You have used all your free listings. Pay ₹30 to create additional listings.
-                </AlertDescription>
-              </Alert>
-              <ListingPaymentButton type="listing_fee" />
-            </div>
-          )}
-        </div>
-
-        {/* Products Grid */}
-        {loading ? (
-          <div className="text-center py-12">
-            <p className="text-gray-600">Loading your products...</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {products.map((product) => (
-              <Card key={product.id} className="overflow-hidden">
-                <div className="relative">
-                  <img
-                    src={product.image_urls?.[0] || '/placeholder.svg'}
-                    alt={product.name}
-                    className="w-full h-48 object-cover"
-                  />
-                  {product.is_featured && (
-                    <Badge className="absolute top-2 left-2 bg-yellow-500">
-                      <Star className="w-3 h-3 mr-1" />
-                      Featured
-                    </Badge>
-                  )}
-                </div>
-                <CardContent className="p-4">
-                  <h3 className="font-semibold text-base sm:text-lg mb-2 line-clamp-1">{product.name}</h3>
-                  <p className="text-gray-600 text-sm mb-2 line-clamp-2">{product.description}</p>
-                  <p className="text-lg sm:text-xl font-bold text-green-600 mb-4">₹{product.price}</p>
-                  
-                  <div className="space-y-3">
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => openProductModal(product)}
-                        className="flex-1 min-w-0"
-                      >
-                        <Eye className="h-4 w-4 mr-1" />
-                        View
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => deleteProduct(product.id)}
-                        className="flex-1 min-w-0"
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Delete
-                      </Button>
-                    </div>
-                    
-                    {!product.is_featured && (
-                      <div className="space-y-2">
-                        <ListingPaymentButton 
-                          type="featured_3_days" 
-                          productId={product.id}
-                        >
-                          Feature 3 days - ₹100
-                        </ListingPaymentButton>
-                        <ListingPaymentButton 
-                          type="featured_7_days" 
-                          productId={product.id}
-                        >
-                          Feature 7 days - ₹200
-                        </ListingPaymentButton>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto mx-4">
+                    <DialogHeader>
+                      <DialogTitle>Add New Product</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                      <div>
+                        <Label htmlFor="name">Product Name *</Label>
+                        <Input
+                          id="name"
+                          value={formData.name}
+                          onChange={(e) => setFormData({...formData, name: e.target.value})}
+                          required
+                          placeholder="Enter product name"
+                        />
                       </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
 
-        {products.length === 0 && !loading && (
-          <div className="text-center py-12">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No products yet</h3>
-            <p className="text-gray-600">Start by adding your first product to sell!</p>
-          </div>
-        )}
+                      <div>
+                        <Label htmlFor="description">Description</Label>
+                        <Textarea
+                          id="description"
+                          value={formData.description}
+                          onChange={(e) => setFormData({...formData, description: e.target.value})}
+                          rows={3}
+                          placeholder="Describe your product"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="price">Price (₹) *</Label>
+                          <Input
+                            id="price"
+                            type="number"
+                            value={formData.price}
+                            onChange={(e) => setFormData({...formData, price: e.target.value})}
+                            required
+                            min="0"
+                            step="0.01"
+                            placeholder="0.00"
+                          />
+                        </div>
+
+                        <div>
+                          <Label htmlFor="condition">Condition *</Label>
+                          <Select value={formData.condition} onValueChange={(value) => setFormData({...formData, condition: value})}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select condition" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {conditions.map((condition) => (
+                                <SelectItem key={condition} value={condition}>{condition}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="category">Category *</Label>
+                        <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {categories.map((category) => (
+                              <SelectItem key={category} value={category}>{category}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <ImageUpload
+                        onImagesChange={(urls) => setFormData({...formData, imageUrls: urls})}
+                        existingImages={formData.imageUrls}
+                      />
+
+                      <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2">
+                        <Button type="button" variant="outline" onClick={() => {
+                          setIsAddingProduct(false);
+                          resetForm();
+                        }}>
+                          Cancel
+                        </Button>
+                        <Button type="submit" disabled={submitting}>
+                          {submitting ? 'Creating...' : 'Create Product'}
+                        </Button>
+                      </div>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              ) : (
+                <div className="space-y-4">
+                  <Alert>
+                    <CreditCard className="h-4 w-4" />
+                    <AlertDescription>
+                      You have used all your free listings. Pay ₹30 to create additional listings.
+                    </AlertDescription>
+                  </Alert>
+                  <ListingPaymentButton type="listing_fee" />
+                </div>
+              )}
+            </div>
+
+            {/* Products Grid */}
+            {loading ? (
+              <div className="text-center py-12">
+                <p className="text-gray-600">Loading your products...</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                {products.map((product) => (
+                  <Card key={product.id} className="overflow-hidden">
+                    <div className="relative">
+                      <img
+                        src={product.image_urls?.[0] || '/placeholder.svg'}
+                        alt={product.name}
+                        className="w-full h-48 object-cover"
+                      />
+                      {product.is_featured && (
+                        <Badge className="absolute top-2 left-2 bg-yellow-500">
+                          <Star className="w-3 h-3 mr-1" />
+                          Featured
+                        </Badge>
+                      )}
+                    </div>
+                    <CardContent className="p-4">
+                      <h3 className="font-semibold text-base sm:text-lg mb-2 line-clamp-1">{product.name}</h3>
+                      <p className="text-gray-600 text-sm mb-2 line-clamp-2">{product.description}</p>
+                      <p className="text-lg sm:text-xl font-bold text-green-600 mb-4">₹{product.price}</p>
+                      
+                      <div className="space-y-3">
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openProductModal(product)}
+                            className="flex-1 min-w-0"
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            View
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => deleteProduct(product.id)}
+                            className="flex-1 min-w-0"
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Delete
+                          </Button>
+                        </div>
+                        
+                        {!product.is_featured && (
+                          <div className="space-y-2">
+                            <ListingPaymentButton 
+                              type="featured_3_days" 
+                              productId={product.id}
+                            >
+                              Feature 3 days - ₹100
+                            </ListingPaymentButton>
+                            <ListingPaymentButton 
+                              type="featured_7_days" 
+                              productId={product.id}
+                            >
+                              Feature 7 days - ₹200
+                            </ListingPaymentButton>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {products.length === 0 && !loading && (
+              <div className="text-center py-12">
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No products yet</h3>
+                <p className="text-gray-600">Start by adding your first product to sell!</p>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Bids Tab */}
+          <TabsContent value="bids" className="space-y-6">
+            <div className="space-y-6">
+              <h2 className="text-xl font-semibold">Pending Bids ({pendingBids.length})</h2>
+              
+              {pendingBids.length === 0 ? (
+                <Card>
+                  <CardContent className="p-8 text-center">
+                    <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No pending bids</h3>
+                    <p className="text-gray-600">When buyers place bids on your products, they'll appear here.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {pendingBids.map((bid) => (
+                    <Card key={bid.id}>
+                      <CardContent className="p-6">
+                        <div className="flex flex-col lg:flex-row gap-6">
+                          <div className="flex-shrink-0">
+                            <img
+                              src={bid.product?.image_urls?.[0] || '/placeholder.svg'}
+                              alt={bid.product?.name}
+                              className="w-24 h-24 object-cover rounded-lg"
+                            />
+                          </div>
+                          
+                          <div className="flex-1 space-y-4">
+                            <div>
+                              <h3 className="text-lg font-semibold">{bid.product?.name}</h3>
+                              <p className="text-gray-600">Listed at ₹{bid.product?.price}</p>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <p className="text-sm text-gray-600">Buyer</p>
+                                <p className="font-medium">{bid.buyer?.full_name || 'Anonymous'}</p>
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-600">Bid Amount</p>
+                                <p className="text-xl font-bold text-green-600">₹{bid.amount}</p>
+                              </div>
+                            </div>
+                            
+                            {bid.message && (
+                              <div>
+                                <p className="text-sm text-gray-600">Message</p>
+                                <p className="text-gray-800 bg-gray-50 p-3 rounded-lg">{bid.message}</p>
+                              </div>
+                            )}
+                            
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                onClick={() => handleBidResponse(bid.id, 'accepted')}
+                                className="bg-green-600 hover:bg-green-700"
+                              >
+                                <Check className="w-4 h-4 mr-2" />
+                                Accept
+                              </Button>
+                              <Button
+                                onClick={() => handleBidResponse(bid.id, 'rejected')}
+                                variant="destructive"
+                              >
+                                <X className="w-4 h-4 mr-2" />
+                                Reject
+                              </Button>
+                              <Button
+                                onClick={() => setSelectedBid(bid)}
+                                variant="outline"
+                              >
+                                <Reply className="w-4 h-4 mr-2" />
+                                Counter Offer
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* History Tab */}
+          <TabsContent value="history" className="space-y-6">
+            <div className="space-y-6">
+              <h2 className="text-xl font-semibold">Bid History</h2>
+              
+              {respondedBids.length === 0 ? (
+                <Card>
+                  <CardContent className="p-8 text-center">
+                    <TrendingUp className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No bid history</h3>
+                    <p className="text-gray-600">Your responded bids will appear here.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {respondedBids.map((bid) => (
+                    <Card key={bid.id}>
+                      <CardContent className="p-6">
+                        <div className="flex flex-col lg:flex-row gap-6">
+                          <div className="flex-shrink-0">
+                            <img
+                              src={bid.product?.image_urls?.[0] || '/placeholder.svg'}
+                              alt={bid.product?.name}
+                              className="w-20 h-20 object-cover rounded-lg"
+                            />
+                          </div>
+                          
+                          <div className="flex-1">
+                            <div className="flex justify-between items-start mb-2">
+                              <h3 className="text-lg font-semibold">{bid.product?.name}</h3>
+                              <Badge className={getStatusColor(bid.status)}>
+                                {bid.status}
+                              </Badge>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                              <div>
+                                <p className="text-gray-600">Buyer</p>
+                                <p className="font-medium">{bid.buyer?.full_name || 'Anonymous'}</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-600">Original Bid</p>
+                                <p className="font-medium">₹{bid.amount}</p>
+                              </div>
+                              {bid.counter_amount && (
+                                <div>
+                                  <p className="text-gray-600">Counter Offer</p>
+                                  <p className="font-medium">₹{bid.counter_amount}</p>
+                                </div>
+                              )}
+                            </div>
+                            
+                            <p className="text-xs text-gray-500 mt-2">
+                              {new Date(bid.updated_at).toLocaleDateString()} at {new Date(bid.updated_at).toLocaleTimeString()}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
+
+        {/* Counter Offer Dialog */}
+        <Dialog open={!!selectedBid} onOpenChange={() => setSelectedBid(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Counter Offer</DialogTitle>
+            </DialogHeader>
+            {selectedBid && (
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-gray-600">Product: {selectedBid.product?.name}</p>
+                  <p className="text-sm text-gray-600">Original Bid: ₹{selectedBid.amount}</p>
+                  <p className="text-sm text-gray-600">Listed Price: ₹{selectedBid.product?.price}</p>
+                </div>
+                
+                <div>
+                  <Label htmlFor="counterAmount">Counter Offer Amount (₹)</Label>
+                  <Input
+                    id="counterAmount"
+                    type="number"
+                    value={counterAmount}
+                    onChange={(e) => setCounterAmount(e.target.value)}
+                    placeholder="Enter counter amount"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="responseMessage">Message (Optional)</Label>
+                  <Textarea
+                    id="responseMessage"
+                    value={responseMessage}
+                    onChange={(e) => setResponseMessage(e.target.value)}
+                    placeholder="Add a message to your counter offer..."
+                    rows={3}
+                  />
+                </div>
+                
+                <div className="flex space-x-2">
+                  <Button
+                    onClick={() => handleBidResponse(selectedBid.id, 'countered', counterAmount, responseMessage)}
+                    disabled={!counterAmount}
+                    className="flex-1"
+                  >
+                    Send Counter Offer
+                  </Button>
+                  <Button
+                    onClick={() => setSelectedBid(null)}
+                    variant="outline"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
