@@ -1,28 +1,38 @@
-
 import React from 'react';
-import { Star } from 'lucide-react';
+
+const MetricItem = ({ value, label }: { value: string; label: string }) => (
+  <div className="text-center">
+    <p className="text-4xl font-bold font-serif text-primary">{value}</p>
+    <p className="text-sm text-muted-foreground mt-1">{label}</p>
+  </div>
+);
 
 const MetricsSection = () => {
+  const metrics = [
+    { value: '10K+', label: 'Curated Styles' },
+    { value: '100+', label: 'Premium Brands' },
+    { value: '1M', label: 'Future Community' },
+  ];
+
   return (
-    <section className="container mx-auto px-4 pt-12 pb-8">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8 border-t-2 border-gradient-to-r from-purple-200 via-blue-200 to-indigo-200 dark:from-purple-800 dark:via-blue-800 dark:to-indigo-800 pt-12">
-        <div className="text-center group hover:scale-105 transition-transform duration-300">
-          <div className="text-3xl sm:text-4xl font-black bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">2K+</div>
-          <div className="text-sm sm:text-base text-gray-600 dark:text-gray-400 font-medium">Items Listed</div>
-        </div>
-        <div className="text-center group hover:scale-105 transition-transform duration-300">
-          <div className="text-3xl sm:text-4xl font-black bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">95%</div>
-          <div className="text-sm sm:text-base text-gray-600 dark:text-gray-400 font-medium">Verified Authenticity</div>
-        </div>
-        <div className="text-center group hover:scale-105 transition-transform duration-300">
-          <div className="text-3xl sm:text-4xl font-black bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">₹50L+</div>
-          <div className="text-sm sm:text-base text-gray-600 dark:text-gray-400 font-medium">Traded So Far</div>
-        </div>
-        <div className="text-center group hover:scale-105 transition-transform duration-300">
-          <div className="text-3xl sm:text-4xl font-black bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2 flex items-center justify-center">
-            4.9<Star className="w-6 h-6 text-yellow-400 fill-current ml-1" />
+    <section className="bg-secondary/50">
+      <div className="container mx-auto px-4 py-12">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 items-center">
+          <div className="hidden md:block">
+            <img src="/placeholder.svg" alt="Fashion item" className="w-2/3 mx-auto"/>
           </div>
-          <div className="text-sm sm:text-base text-gray-600 dark:text-gray-400 font-medium">Seller Rating</div>
+          
+          <div className="col-span-2 grid grid-cols-3 gap-8">
+            {metrics.map(metric => (
+              <MetricItem key={metric.label} value={metric.value} label={metric.label} />
+            ))}
+          </div>
+
+          <div className="hidden md:flex justify-center items-center">
+            <div className="w-32 h-32 rounded-full border-2 border-dashed border-primary flex items-center justify-center">
+              <span className="text-center text-xs font-semibold text-primary transform -rotate-12">Launching 2025</span>
+            </div>
+          </div>
         </div>
       </div>
     </section>

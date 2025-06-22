@@ -1,218 +1,102 @@
-
 import React from 'react';
-import { Heart, Globe, Users, Leaf } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const About = () => {
-  const team = [
-    {
-      name: 'Prateek Thapliyal',
-      role: 'Co-Founder & CEO',
-      image: '/Founder.jpeg',
-      bio: 'Passionate about sustainable fashion and technology. Previously worked at leading e-commerce platforms.'
-    }
+  const values = [
+    { num: '01', name: 'Quality Curation' },
+    { num: '02', name: 'Authenticity Guaranteed' },
+    { num: '03', name: 'Community Trust' },
+    { num: '04', name: 'Sustainable Impact' },
+    { num: '05', name: 'Conscious Consumption' },
+    { num: '06', name: 'Empowering Sellers' },
   ];
 
-  const values = [
-    {
-      icon: <Leaf className="w-8 h-8 text-green-600" />,
-      title: 'Sustainability First',
-      description: 'Every decision we make prioritizes environmental impact and circular economy principles.'
-    },
-    {
-      icon: <Users className="w-8 h-8 text-blue-600" />,
-      title: 'Community Driven',
-      description: 'We believe in the power of communities to create positive change through shared resources.'
-    },
-    {
-      icon: <Heart className="w-8 h-8 text-red-600" />,
-      title: 'Quality & Trust',
-      description: 'We ensure every transaction is safe, fair, and beneficial for all parties involved.'
-    },
-    {
-      icon: <Globe className="w-8 h-8 text-purple-600" />,
-      title: 'Local Impact',
-      description: 'We connect local communities while building a global movement for sustainable fashion.'
-    }
+  const designers = [
+    { name: 'Prateek Thapliyal', role: 'Founder & CEO', image: '/Founder.jpeg' },
+    { name: 'Jane Doe', role: 'Head of Curation', image: '/placeholder.svg' },
+    { name: 'John Smith', role: 'Lead Developer', image: '/placeholder.svg' },
   ];
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="bg-background text-foreground">
+      
       {/* Hero Section */}
-      <section className="py-20 bg-gradient-to-br from-green-50 to-emerald-50">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-5xl font-bold text-gray-900 mb-6">About Dapper</h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            We're building the future of sustainable fashion through community-driven circular economy, 
-            connecting conscious consumers across Indian cities to buy, sell, and donate pre-loved clothing.
+      <section className="container mx-auto px-4 py-24 sm:py-32">
+        <div className="grid md:grid-cols-2 gap-12 items-center">
+          <div className="space-y-4">
+            <h1 className="text-6xl md:text-7xl font-bold tracking-tighter">MEET DAPPER</h1>
+            <p className="text-muted-foreground text-lg max-w-md">
+              At Dapper, we see a world where fashion is circular. Our platform connects discerning individuals who appreciate style and sustainability, creating a community where every piece has a past and a future.
+            </p>
+          </div>
+          <p className="text-muted-foreground">
+            We are dedicated to more than just commerce. We're building a movement that celebrates conscious consumption and the timeless appeal of well-made clothing.
           </p>
         </div>
+        <img src="/placeholder.svg" alt="Team at Dapper" className="mt-16 w-full h-[500px] object-cover rounded-2xl" />
       </section>
 
-      {/* Mission Section */}
-      <section className="py-16">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      {/* Inside Dapper Section */}
+      <section className="container mx-auto px-4 pb-24 sm:pb-32">
+        <div className="grid md:grid-cols-3 gap-12">
+          <h2 className="text-lg font-semibold uppercase tracking-widest">INSIDE DAPPER</h2>
+          <div className="md:col-span-2 space-y-12">
             <div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-6">Our Mission</h2>
-              <p className="text-gray-700 mb-6 text-lg">
-                Fashion is the second most polluting industry globally, and fast fashion culture has created 
-                an environmental crisis. At Dapper, we're changing this narrative by creating a platform 
-                where fashion finds new life through community-driven sharing.
-              </p>
-              <p className="text-gray-700 mb-6">
-                Starting with Indian cities like Delhi, Bengaluru, and Dehradun, we're building localized 
-                marketplaces that reduce textile waste, support circular economy, and make sustainable 
-                fashion accessible to everyone.
-              </p>
+              <h3 className="text-2xl font-semibold mb-4">Our Vision</h3>
+              <p className="text-muted-foreground max-w-2xl">We seek to close the loop on fashion by creating a trusted ecosystem for pre-loved clothing. Our vision is to empower individuals to make sustainable choices without sacrificing style, turning every wardrobe into a source of endless possibility and minimal waste.</p>
+            </div>
+             <div>
+              <h3 className="text-2xl font-semibold mb-4">Our Mission</h3>
+              <p className="text-muted-foreground max-w-2xl">We are dedicated to curating the finest pre-loved garments and making them accessible to a global community. Through a seamless digital experience and a commitment to authenticity, we aim to redefine the second-hand market as the first choice for the conscious consumer.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      {/* Design & Soul Section */}
+      <section className="bg-secondary/50 py-24 sm:py-32">
+        <div className="container mx-auto px-4">
+           <h2 className="text-7xl md:text-9xl font-bold tracking-tighter">STYLE • SUSTAINABILITY</h2>
+           <div className="grid md:grid-cols-2 gap-12 items-start mt-16">
               <div className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-2 h-2 bg-green-600 rounded-full"></div>
-                  <span className="text-gray-700">Reduce textile waste by extending clothing lifecycle</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-2 h-2 bg-green-600 rounded-full"></div>
-                  <span className="text-gray-700">Make sustainable fashion affordable and accessible</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-2 h-2 bg-green-600 rounded-full"></div>
-                  <span className="text-gray-700">Build conscious communities across Indian cities</span>
-                </div>
+                <h3 className="text-lg font-semibold uppercase tracking-widest">OUR VALUES</h3>
+                <p className="text-muted-foreground max-w-md">Rooted in the belief that great style and a healthy planet can coexist, our values guide every decision we make.</p>
+                <img src="/placeholder.svg" alt="Curated clothing item" className="w-full h-auto object-cover rounded-2xl pt-8" />
               </div>
-            </div>
-            <div className="bg-green-100 rounded-2xl p-8">
-            <img
-              src="/MissionSection.jpg"
-              alt="Sustainable fashion mission"
-              className="w-full h-80 object-cover rounded-xl"
-            />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Story Section */}
-      <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">Our Story</h2>
-            <p className="text-gray-700 text-lg mb-8">
-              Dapper was born from a simple observation: our wardrobes are full of clothes we rarely wear, 
-              while millions of garments end up in landfills every year. Our founders, Arjun and Priya, 
-              noticed this paradox in their own lives and communities.
-            </p>
-            <p className="text-gray-700 mb-8">
-              After witnessing the environmental impact of fast fashion and the growing awareness among 
-              young Indians about sustainable living, they decided to create a platform that would make 
-              circular fashion simple, safe, and social.
-            </p>
-            <p className="text-gray-700">
-              What started as a small experiment in Delhi has now grown into a movement, connecting 
-              conscious consumers across multiple cities and preventing thousands of clothing items 
-              from ending up in waste.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Values Section */}
-      <section className="py-16">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Our Values</h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              These principles guide every decision we make and every feature we build
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {values.map((value, index) => (
-              <Card key={index} className="text-center p-6 hover:shadow-lg transition-shadow">
-                <CardContent className="p-0">
-                  <div className="flex justify-center mb-4">
-                    {value.icon}
+              <div>
+                {values.map(value => (
+                  <div key={value.num} className="flex items-center justify-between border-b border-border py-6">
+                    <p className="text-2xl font-semibold">{value.name}</p>
+                    <span className="text-lg text-muted-foreground">{value.num}</span>
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">{value.title}</h3>
-                  <p className="text-gray-600">{value.description}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                ))}
+              </div>
+           </div>
         </div>
       </section>
 
-      {/* Team Section */}
-      <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Meet Our Team</h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Passionate individuals working together to make sustainable fashion accessible to everyone
-            </p>
+      {/* Designers Section */}
+      <section className="container mx-auto px-4 py-24 sm:py-32">
+        <div className="grid md:grid-cols-3 gap-12 items-start">
+          <h2 className="text-lg font-semibold uppercase tracking-widest">THE TEAM BEHIND THE VISION</h2>
+          <div className="md:col-span-2 space-y-4">
+            <p className="text-2xl font-semibold">Each member of our team brings a unique perspective, bound by a shared passion for thoughtful curation and timeless quality. Together, we shape a space that feels personal, purposeful, and beautifully made.</p>
+            <p className="text-muted-foreground">Founded on a love for fashion's history and a vision for its future, Dapper grew from the belief that pre-loved items carry stories worth telling. Every garment is a piece of art; every transaction, a connection. This is our purpose: to unite sellers and buyers in a shared appreciation for style that endures.</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {team.map((member, index) => (
-              <Card key={index} className="text-center hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
-                  <img 
-                    src={member.image} 
-                    alt={member.name}
-                    className="w-24 h-24 rounded-full mx-auto mb-4 object-cover"
-                  />
-                  <h3 className="text-xl font-semibold text-gray-900 mb-1">{member.name}</h3>
-                  <p className="text-green-600 font-medium mb-3">{member.role}</p>
-                  <p className="text-gray-600 text-sm">{member.bio}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+        </div>
+        <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+          {designers.map(designer => (
+            <div key={designer.name}>
+              <img src={designer.image} alt={designer.name} className="w-full h-auto object-cover grayscale aspect-[4/5] rounded-2xl" />
+              <h3 className="font-semibold text-lg mt-4">{designer.name}</h3>
+              <p className="text-muted-foreground">{designer.role}</p>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* Impact Stats */}
-      <section className="py-16 bg-green-600 text-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Our Impact So Far</h2>
-            <p className="text-green-100 max-w-2xl mx-auto">
-              Together with our community, we're making a real difference in sustainable fashion
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
-            <div>
-              <div className="text-4xl font-bold mb-2">2,500+</div>
-              <p className="text-green-100">Items Sold</p>
-            </div>
-            <div>
-              <div className="text-4xl font-bold mb-2">1,200+</div>
-              <p className="text-green-100">Active Users</p>
-            </div>
-            <div>
-              <div className="text-4xl font-bold mb-2">800+</div>
-              <p className="text-green-100">Items Donated</p>
-            </div>
-            <div>
-              <div className="text-4xl font-bold mb-2">3</div>
-              <p className="text-green-100">Cities Connected</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Vision Section */}
-      <section className="py-16">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">Looking Ahead</h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-            Our vision extends beyond just buying and selling clothes. We're building a comprehensive 
-            ecosystem for sustainable fashion that includes AI-powered styling, community events, 
-            brand partnerships, and global expansion.
-          </p>
-          <p className="text-gray-700 max-w-2xl mx-auto">
-            Join us in revolutionizing how India thinks about fashion. Together, we can make 
-            sustainable style the norm, not the exception.
-          </p>
-        </div>
-      </section>
     </div>
   );
 };

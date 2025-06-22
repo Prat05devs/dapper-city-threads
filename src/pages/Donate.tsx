@@ -1,283 +1,271 @@
-
-import React from 'react';
-import { Recycle, MapPin, Clock, Gift } from 'lucide-react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { HandHeart, Recycle, Users, Gift } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import LocationSelector from '@/components/LocationSelector';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Donate = () => {
-  const handleSchedulePickup = () => {
-    const emailSubject = encodeURIComponent('Donation Pickup Request - Dapper');
-    const emailBody = encodeURIComponent(`
-Hello Dapper Team,
+  const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    address: '',
+    items: ''
+  });
 
-I would like to schedule a pickup for my clothing donations.
+  const { location, setLocation } = useAuth();
 
-Contact Information:
-- Name: [Your Name]
-- Phone: [Your Phone]
-- Email: [Your Email]
-
-Pickup Address:
-[Your Full Address]
-
-Donation Items:
-[List your items here]
-
-Preferred Pickup Time:
-[Your preferred date and time]
-
-Additional Notes:
-[Any special instructions]
-
-Thank you for supporting sustainable fashion!
-
-Best regards,
-[Your Name]
-    `);
-    
-    window.location.href = `mailto:donations@dapper.com?subject=${emailSubject}&body=${emailBody}`;
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { id, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [id]: value
+    }));
   };
 
+  const handleCountryChange = (country: string) => {
+    setLocation(prev => ({ ...prev, country }));
+  };
+
+  const handleCityChange = (city: string) => {
+    setLocation(prev => ({ ...prev, city }));
+  };
+
+  const handleSchedulePickup = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const subject = encodeURIComponent('Donation Pickup Request - Dapper City Threads');
+    const body = encodeURIComponent(`
+Dear Dapper City Threads Team,
+
+I would like to schedule a donation pickup with the following details:
+
+Name: ${formData.fullName}
+Email: ${formData.email}
+Phone: ${formData.phone}
+Location: ${location.city}, ${location.country}
+Pickup Address: ${formData.address}
+Donation Items: ${formData.items}
+
+Please contact me to arrange the pickup date and time.
+
+Thank you,
+${formData.fullName}
+    `);
+    
+    const mailtoLink = `mailto:ishupoochi@gmail.com?subject=${subject}&body=${body}`;
+    window.open(mailtoLink);
+  };
+
+  const impactCards = [
+    {
+      icon: <HandHeart className="h-8 w-8 text-primary" />,
+      title: 'Local Community Support',
+      description: 'Your donations are given directly to those in need within your city, making a tangible local impact.'
+    },
+    {
+      icon: <Recycle className="h-8 w-8 text-primary" />,
+      title: 'Sustainable Recycling',
+      description: 'Items that cannot be donated are sent to our trusted partners for responsible recycling, closing the loop on fashion waste.'
+    },
+    {
+      icon: <Users className="h-8 w-8 text-primary" />,
+      title: 'Empowering Change',
+      description: 'By choosing to donate, you contribute to a more sustainable future and support our mission of conscious consumption.'
+    }
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Donate Items</h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Give your gently used fashion items a new life and help support our community programs. 
-            Schedule a free pickup or learn about drop-off options.
+    <div className="bg-background text-foreground">
+      
+      {/* Hero Section */}
+      <section className="container mx-auto px-4 py-24 sm:py-32">
+        <div className="grid md:grid-cols-2 gap-12 items-center">
+          <div className="space-y-4">
+            <h1 className="text-6xl md:text-7xl font-bold tracking-tighter">GIVE WITH PURPOSE</h1>
+            <p className="text-muted-foreground text-lg max-w-md">
+              Extend the life of your cherished garments. Your decision to donate supports local communities and champions a more sustainable world.
+            </p>
+          </div>
+          <p className="text-muted-foreground">
+            We've created a seamless process for you to make a meaningful impact. For a small pickup fee, we handle the logistics, ensuring your items find a new home or are responsibly recycled.
           </p>
         </div>
+        <img src="/DonationImpact.jpg" alt="Donated clothing" className="mt-16 w-full h-[500px] object-cover rounded-2xl" />
+      </section>
 
-        {/* Impact Section */}
-        <div className="bg-green-600 rounded-2xl p-8 text-white mb-12">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-            <div>
-              <h2 className="text-3xl font-bold mb-4">Fashion That Doesn't Cost the Earth</h2>
-              <p className="text-green-100 mb-6">
-                Every garment has a story and an environmental footprint. At Dapper, 
-                we extend the lifecycle of clothing, reducing waste and demand for new production.
-              </p>
-              <div className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  <Recycle className="w-6 h-6 text-green-200" />
-                  <div>
-                    <h3 className="font-semibold">Circular Economy</h3>
-                    <p className="text-green-100 text-sm">We keep clothing in circulation, extending its useful life and reducing landfill waste.</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <Gift className="w-6 h-6 text-green-200" />
-                  <div>
-                    <h3 className="font-semibold">Community Impact</h3>
-                    <p className="text-green-100 text-sm">Your donations help support our community programs and reduce waste.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="bg-white/10 rounded-xl p-6 backdrop-blur-sm">
-              <img 
-                src="/DonationImpact.jpg" 
-                alt="Sustainable fashion donation" 
-                className="w-full h-64 object-cover rounded-lg"
-              />
-            </div>
+      {/* Impact Section */}
+      <section className="bg-secondary/50 py-24 sm:py-32">
+        <div className="container mx-auto px-4">
+          <div className="text-center max-w-2xl mx-auto">
+            <h2 className="font-serif text-4xl md:text-5xl font-medium">How Your Donation Makes a Difference</h2>
+            <p className="text-muted-foreground mt-4">
+              Our process is designed for maximum positive impact. We believe in transparency and responsibility, ensuring every donated item is treated with care and purpose.
+            </p>
+          </div>
+          <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
+            {impactCards.map(card => (
+              <Card key={card.title} className="bg-background border-none rounded-2xl p-8 text-center shadow-lg">
+                <div className="flex justify-center mb-4">{card.icon}</div>
+                <h3 className="font-semibold text-xl mb-2">{card.title}</h3>
+                <p className="text-muted-foreground">{card.description}</p>
+              </Card>
+            ))}
           </div>
         </div>
+      </section>
 
-        <Tabs defaultValue="schedule" className="space-y-8">
-          <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto">
+      {/* Donation Form & Guidelines Section */}
+      <section className="container mx-auto px-4 py-24 sm:py-32">
+        <Tabs defaultValue="schedule" className="max-w-4xl mx-auto">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="schedule">Schedule Pickup</TabsTrigger>
             <TabsTrigger value="guidelines">Donation Guidelines</TabsTrigger>
           </TabsList>
-
-          <TabsContent value="schedule" className="space-y-6">
-            <Card className="max-w-2xl mx-auto">
+          
+          <TabsContent value="schedule" className="mt-8">
+            <Card className="border-border p-4 sm:p-8 rounded-2xl">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MapPin className="w-5 h-5 text-green-600" />
-                  Schedule a Free Pickup
-                </CardTitle>
-                <p className="text-sm text-gray-600">
-                  Fill out the form below and we'll arrange a convenient pickup time for your donations.
-                </p>
+                <CardTitle>Schedule Your Pickup</CardTitle>
+                <p className="text-muted-foreground">We charge a nominal fee to cover logistics and support our operations.</p>
               </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Contact Information */}
-                <div>
-                  <h3 className="font-semibold mb-4">Contact Information</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="fullName">Full Name *</Label>
-                      <Input id="fullName" className="mt-1" placeholder="Enter your full name" />
-                    </div>
-                    <div>
-                      <Label htmlFor="email">Email *</Label>
-                      <Input id="email" type="email" className="mt-1" placeholder="your@email.com" />
-                    </div>
-                    <div className="md:col-span-2">
-                      <Label htmlFor="phone">Phone Number *</Label>
-                      <Input id="phone" className="mt-1" placeholder="Enter your phone number" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Pickup Address */}
-                <div>
-                  <h3 className="font-semibold mb-4">Pickup Address</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="address">Street Address *</Label>
-                      <Input id="address" className="mt-1" placeholder="Enter your complete address" />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <Label htmlFor="city">City *</Label>
-                        <Input id="city" className="mt-1" placeholder="City" />
-                      </div>
-                      <div>
-                        <Label htmlFor="state">State *</Label>
-                        <Input id="state" className="mt-1" placeholder="State" />
-                      </div>
-                      <div>
-                        <Label htmlFor="zipCode">ZIP Code *</Label>
-                        <Input id="zipCode" className="mt-1" placeholder="ZIP Code" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Donation Details */}
-                <div>
-                  <h3 className="font-semibold mb-4">Donation Details</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="items">List of Items *</Label>
-                      <Textarea 
-                        id="items" 
-                        className="mt-1" 
-                        placeholder="Please list the items you're donating (e.g., 3 shirts, 2 jeans, 1 jacket...)"
-                        rows={4}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="preferredTime">Preferred Pickup Time</Label>
+              <CardContent>
+                <form className="space-y-6" onSubmit={handleSchedulePickup}>
+                  <div className="grid sm:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="fullName">Full Name</Label>
                       <Input 
-                        id="preferredTime" 
-                        className="mt-1" 
-                        placeholder="e.g., Weekdays 10 AM - 2 PM" 
+                        id="fullName" 
+                        placeholder="Your Name" 
+                        value={formData.fullName}
+                        onChange={handleInputChange}
+                        required
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="notes">Additional Notes</Label>
-                      <Textarea 
-                        id="notes" 
-                        className="mt-1" 
-                        placeholder="Any special instructions or notes for our pickup team..."
-                        rows={3}
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email Address</Label>
+                      <Input 
+                        id="email" 
+                        type="email" 
+                        placeholder="you@example.com" 
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        required
                       />
                     </div>
                   </div>
-                </div>
-
-                <Button 
-                  className="w-full bg-green-600 hover:bg-green-700"
-                  onClick={handleSchedulePickup}
-                >
-                  Schedule Pickup
-                </Button>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone Number</Label>
+                    <Input 
+                      id="phone" 
+                      type="tel" 
+                      placeholder="+1 (555) 123-4567" 
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-4">
+                    <Label>Location</Label>
+                    <LocationSelector
+                      valueCountry={location.country}
+                      valueCity={location.city}
+                      onCountryChange={handleCountryChange}
+                      onCityChange={handleCityChange}
+                      compact={true}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="address">Pickup Address</Label>
+                    <Input 
+                      id="address" 
+                      placeholder="123 Main St, Your City" 
+                      value={formData.address}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="items">Donation Items</Label>
+                    <Textarea 
+                      id="items" 
+                      placeholder="e.g., 5 shirts, 2 pairs of jeans, 1 jacket" 
+                      rows={4}
+                      value={formData.items}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                  <Button type="submit" size="lg" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+                    Schedule My Pickup
+                  </Button>
+                </form>
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="guidelines" className="space-y-6">
-            <div className="max-w-3xl mx-auto">
-              <Card>
+          <TabsContent value="guidelines" className="mt-8">
+             <Card className="border-border p-4 sm:p-8 rounded-2xl">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Gift className="w-5 h-5 text-green-600" />
-                    How It Works
-                  </CardTitle>
+                  <CardTitle>Our Donation Process & Guidelines</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <div className="text-center">
-                      <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <span className="text-green-600 font-bold">1</span>
+                <CardContent className="space-y-8">
+                  <div>
+                    <h3 className="font-semibold text-lg mb-4">How It Works</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 text-center">
+                      <div className="space-y-2">
+                        <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center mx-auto"><span className="text-lg font-bold">1</span></div>
+                        <h4 className="font-semibold">Schedule</h4>
+                        <p className="text-sm text-muted-foreground">Fill out the pickup form with your details.</p>
                       </div>
-                      <h3 className="font-semibold mb-2">Schedule</h3>
-                      <p className="text-sm text-gray-600">Fill out the form with your pickup details and preferred time.</p>
+                      <div className="space-y-2">
+                        <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center mx-auto"><span className="text-lg font-bold">2</span></div>
+                        <h4 className="font-semibold">Prepare</h4>
+                        <p className="text-sm text-muted-foreground">Pack your clean, gently used items.</p>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center mx-auto"><span className="text-lg font-bold">3</span></div>
+                        <h4 className="font-semibold">Pickup</h4>
+                        <p className="text-sm text-muted-foreground">Our team will collect your donation.</p>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center mx-auto"><span className="text-lg font-bold">4</span></div>
+                        <h4 className="font-semibold">Impact</h4>
+                        <p className="text-sm text-muted-foreground">Your items are donated or recycled.</p>
+                      </div>
                     </div>
-                    <div className="text-center">
-                      <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <span className="text-green-600 font-bold">2</span>
-                      </div>
-                      <h3 className="font-semibold mb-2">Prepare</h3>
-                      <p className="text-sm text-gray-600">Pack your clean, gently used items in bags or boxes.</p>
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-8">
+                    <div>
+                      <h3 className="font-semibold text-lg mb-4 text-green-600">What We Accept</h3>
+                      <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                        <li>Clean, gently used clothing</li>
+                        <li>Shoes, bags, and accessories</li>
+                        <li>Items with no major damage</li>
+                        <li>Premium and designer brands</li>
+                      </ul>
                     </div>
-                    <div className="text-center">
-                      <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <span className="text-green-600 font-bold">3</span>
-                      </div>
-                      <h3 className="font-semibold mb-2">Pickup</h3>
-                      <p className="text-sm text-gray-600">Our driver will collect your donations at the scheduled time.</p>
-                    </div>
-                    <div className="text-center">
-                      <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <span className="text-green-600 font-bold">4</span>
-                      </div>
-                      <h3 className="font-semibold mb-2">Impact</h3>
-                      <p className="text-sm text-gray-600">Your items help support our community programs and reduce waste.</p>
+                    <div>
+                      <h3 className="font-semibold text-lg mb-4 text-red-600">What We Cannot Accept</h3>
+                      <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                        <li>Torn, stained, or broken items</li>
+                        <li>Undergarments and swimwear</li>
+                        <li>Non-clothing items</li>
+                        <li>Items with strong odors</li>
+                      </ul>
                     </div>
                   </div>
                 </CardContent>
               </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Donation Guidelines</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div>
-                    <h3 className="font-semibold text-green-600 mb-2">What We Accept</h3>
-                    <ul className="list-disc list-inside space-y-1 text-gray-700">
-                      <li>Clean, gently used clothing for all ages</li>
-                      <li>Shoes in good condition</li>
-                      <li>Accessories like bags, belts, and jewelry</li>
-                      <li>Seasonal items and formal wear</li>
-                      <li>Traditional and ethnic clothing</li>
-                    </ul>
-                  </div>
-                  
-                  <div>
-                    <h3 className="font-semibold text-red-600 mb-2">What We Cannot Accept</h3>
-                    <ul className="list-disc list-inside space-y-1 text-gray-700">
-                      <li>Items that are torn, stained, or heavily worn</li>
-                      <li>Undergarments and swimwear</li>
-                      <li>Items with strong odors or pet hair</li>
-                      <li>Non-clothing items (furniture, electronics, etc.)</li>
-                      <li>Items that pose health or safety risks</li>
-                    </ul>
-                  </div>
-
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <h4 className="font-semibold text-blue-800 mb-2">Quality Standards</h4>
-                    <p className="text-blue-700 text-sm">
-                      All donations are tax-deductible. You'll receive a receipt for your contribution. 
-                      Items that don't meet our quality standards are responsibly recycled through our textile partners.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
           </TabsContent>
         </Tabs>
-      </div>
+      </section>
+
     </div>
   );
 };

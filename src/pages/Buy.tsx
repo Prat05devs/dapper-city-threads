@@ -3,34 +3,24 @@ import ProductGrid from '@/components/products/ProductGrid';
 
 const Buy = () => {
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white py-16">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            Discover Sustainable Fashion
-          </h1>
-          <p className="text-xl mb-8 max-w-2xl mx-auto">
-            Browse unique, pre-loved fashion pieces from sellers in your area. Give items a new life while reducing environmental impact.
+    <div className="bg-background text-foreground">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        
+        {/* New Hero Section */}
+        <div className="py-24 sm:py-32 text-center">
+          <h1 className="text-sm font-semibold text-primary uppercase tracking-widest">Our Collection</h1>
+          <p className="mt-6 text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight">
+            Discover Timeless Elegance
           </p>
-          <div className="text-lg opacity-90">
-            Browse all available items • Make offers • Connect with sellers • Leave reviews
-          </div>
-        </div>
-      </div>
-
-      {/* Products Section */}
-      <div className="container mx-auto px-4 py-12">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h2 className="text-2xl font-bold mb-2">Available Items</h2>
-            <p className="text-gray-600">
-              All products are available for viewing. Sign in to place bids, contact sellers, and leave reviews.
+          <div className="mt-8 max-w-2xl mx-auto">
+            <p className="text-lg text-muted-foreground">
+              Explore our curated selection of pre-loved designer pieces, timeless classics, and unique vintage finds. Each item is carefully selected for its quality, style, and story.
             </p>
           </div>
         </div>
         
         <ProductGrid />
+        
       </div>
     </div>
   );

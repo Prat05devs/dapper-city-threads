@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Search, User, Sun, Moon, Menu, X } from 'lucide-react';
+import { Search, User, Sun, Moon, Menu, X, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -12,13 +12,23 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import AuthModal from '@/components/auth/AuthModal';
 import NotificationBell from '@/components/notifications/NotificationBell';
+import LocationButton from '@/components/LocationButton';
+
+const countries = [
+  { code: 'IN', name: 'India', flag: '🇮🇳' },
+  { code: 'US', name: 'USA', flag: '🇺🇸' },
+  { code: 'UK', name: 'UK', flag: '🇬🇧' },
+  { code: 'AU', name: 'Australia', flag: '🇦🇺' },
+  { code: 'CA', name: 'Canada', flag: '🇨🇦' },
+  { code: 'UAE', name: 'UAE', flag: '🇦🇪' },
+];
 
 const Header = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const location = useLocation();
-  const { user, signOut } = useAuth();
+  const { user, signOut, location: currentLocation, setLocation } = useAuth();
 
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
@@ -95,13 +105,14 @@ const Header = () => {
             </nav>
 
             {/* Right Section */}
-            <div className="flex items-center space-x-3">
-              {/* Search - Hidden on mobile */}
-              <div className="relative hidden md:block">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-4 h-4" />
-                <Input 
-                  placeholder="Search rare finds..." 
-                  className="pl-10 w-48 lg:w-64 border-gray-200 dark:border-gray-700 focus:border-purple-500 dark:focus:border-purple-400 rounded-full search-input bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              {/* Location Display - Hidden on mobile */}
+              <div className="hidden md:flex items-center">
+                <LocationButton
+                  country={currentLocation.country}
+                  city={currentLocation.city}
+                  onCountryChange={(country) => setLocation(prev => ({ ...prev, country: country }))}
+                  onCityChange={(city) => setLocation(prev => ({ ...prev, city: city }))}
                 />
               </div>
 
@@ -165,12 +176,13 @@ const Header = () => {
           {isMobileMenuOpen && (
             <div className="lg:hidden absolute top-full left-0 right-0 bg-white dark:bg-gray-900 border-b shadow-lg dark:border-gray-800 mobile-menu-dark">
               <div className="container mx-auto px-4 py-4">
-                {/* Mobile Search */}
-                <div className="relative mb-4 md:hidden">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-4 h-4" />
-                  <Input 
-                    placeholder="Search rare finds..." 
-                    className="pl-10 w-full border-gray-200 dark:border-gray-700 focus:border-purple-500 dark:focus:border-purple-400 rounded-full search-input bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                {/* Mobile Location */}
+                <div className="mb-4 md:hidden">
+                  <LocationButton
+                    country={currentLocation.country}
+                    city={currentLocation.city}
+                    onCountryChange={(country) => setLocation(prev => ({ ...prev, country: country }))}
+                    onCityChange={(city) => setLocation(prev => ({ ...prev, city: city }))}
                   />
                 </div>
                 

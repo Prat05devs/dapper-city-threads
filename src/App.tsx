@@ -1,13 +1,10 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
-import Header from "./components/layout/Header";
-import Footer from "./components/layout/Footer";
-import NotificationSystem from "./components/notifications/NotificationSystem";
+import LayoutWrapper from "./components/layout/LayoutWrapper";
 import Home from "./pages/Home";
 import Buy from "./pages/Buy";
 import Sell from "./pages/Sell";
@@ -17,6 +14,7 @@ import SignIn from "./pages/SignIn";
 import MyActivity from "./pages/MyActivity";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import NotFound from "./pages/NotFound";
+import CreateListing from "./pages/CreateListing";
 
 const queryClient = new QueryClient();
 
@@ -27,25 +25,23 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <div className="min-h-screen flex flex-col">
-            <Header />
-            <NotificationSystem />
-            <main className="flex-1">
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/buy" element={<Buy />} />
-                <Route path="/sell" element={<Sell />} />
-                <Route path="/donate" element={<Donate />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/signin" element={<SignIn />} />
-                <Route path="/my-activity" element={<MyActivity />} />
-                <Route path="/payment-success" element={<PaymentSuccess />} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </main>
-            <Footer />
-          </div>
+          <Routes>
+            <Route element={<LayoutWrapper />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/buy" element={<Buy />} />
+              <Route path="/sell" element={<Sell />} />
+              <Route path="/donate" element={<Donate />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/signin" element={<SignIn />} />
+              <Route path="/payment-success" element={<PaymentSuccess />} />
+              
+              {/* Dashboard Routes - No standard header/footer */}
+              <Route path="/sell/new" element={<CreateListing />} />
+              <Route path="/my-activity" element={<MyActivity />} />
+
+              <Route path="*" element={<NotFound />} />
+            </Route>
+          </Routes>
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>

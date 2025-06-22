@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,6 +10,8 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, fullName: string, phone: string, city: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  location: { country: string; city: string };
+  setLocation: React.Dispatch<React.SetStateAction<{ country: string; city: string }>>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,6 +28,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [location, setLocation] = useState({ country: 'IN', city: 'Delhi' });
   const { toast } = useToast();
 
   useEffect(() => {
@@ -130,6 +132,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signIn,
     signUp,
     signOut,
+    location,
+    setLocation,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

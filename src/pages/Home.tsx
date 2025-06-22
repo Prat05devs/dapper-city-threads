@@ -1,36 +1,27 @@
-
-import React, { useState } from 'react';
-import LocationButton from '@/components/LocationButton';
+import React from 'react';
 import HeroSection from '@/components/home/HeroSection';
 import MetricsSection from '@/components/home/MetricsSection';
-import FeaturedProductsSection from '@/components/home/FeaturedProductsSection';
-import MissionSection from '@/components/home/MissionSection';
-import CTASection from '@/components/home/CTASection';
+import DiscoverCollectionSection from '@/components/home/DiscoverCollectionSection';
+import NewArrivalsSection from '@/components/home/NewArrivalsSection';
+import LegacySection from '@/components/home/LegacySection';
 import TestimonialsSection from '@/components/home/TestimonialsSection';
+// import LegacySection from '@/components/home/LegacySection';
+// import TestimonialsSection from '@/components/home/TestimonialsSection';
 
 const Home = () => {
-  // State for location selector
-  const [country, setCountry] = useState('IN');
-  const [city, setCity] = useState('Delhi');
-
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-300">
-      {/* Floating Location Button */}
-      <div className="fixed top-20 left-4 z-50">
-        <LocationButton
-          country={country}
-          city={city}
-          onCountryChange={setCountry}
-          onCityChange={setCity}
-        />
-      </div>
-
-      <HeroSection city={city} />
+    <div className="bg-background text-foreground">
+      <HeroSection />
       <MetricsSection />
-      <FeaturedProductsSection city={city} />
-      <MissionSection />
-      <CTASection />
+      <DiscoverCollectionSection />
+      <NewArrivalsSection />
+      <LegacySection />
       <TestimonialsSection />
+      {/* 
+        The following components need to be created or updated:
+        <LegacySection />
+        <TestimonialsSection />
+      */}
     </div>
   );
 };

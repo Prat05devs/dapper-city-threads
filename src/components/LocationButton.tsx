@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { MapPin, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -36,10 +35,10 @@ const LocationButton = ({ country, city, onCountryChange, onCityChange }: Locati
       <DialogTrigger asChild>
         <Button 
           variant="outline" 
-          className="bg-white/90 backdrop-blur-sm border-purple-200 hover:bg-white/95 shadow-lg hover:shadow-xl transition-all duration-300 text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 h-auto"
+          className="bg-white/90 backdrop-blur-sm border-purple-200 hover:bg-white/95 shadow-lg hover:shadow-xl transition-all duration-300 text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 h-auto min-w-0"
         >
           <MapPin className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 text-purple-600 flex-shrink-0" />
-          <span className="text-gray-700 font-medium truncate max-w-[120px] sm:max-w-none">
+          <span className="text-gray-700 font-medium truncate max-w-[80px] sm:max-w-[120px] md:max-w-none">
             <span className="hidden sm:inline">Trending in </span>
             {city}, {countryObj?.name}
           </span>
@@ -56,6 +55,7 @@ const LocationButton = ({ country, city, onCountryChange, onCityChange }: Locati
             valueCity={city}
             onCountryChange={onCountryChange}
             onCityChange={onCityChange}
+            compact={true}
           />
         </div>
       </DialogContent>
