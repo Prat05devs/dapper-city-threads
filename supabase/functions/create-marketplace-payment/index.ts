@@ -44,7 +44,7 @@ serve(async (req) => {
         'line_items[0][quantity]': '1',
         'mode': 'payment',
         'success_url': `${req.headers.get('origin')}/payment-success?session_id={CHECKOUT_SESSION_ID}&type=marketplace`,
-        'cancel_url': `${req.headers.get('origin')}/buy`,
+        'cancel_url': `${req.headers.get('origin')}/my-activity`,
         'payment_intent_data[application_fee_amount]': platformFee.toString(),
         'payment_intent_data[transfer_data][destination]': seller_stripe_account_id,
         'metadata[bid_id]': bid_id,
@@ -92,6 +92,17 @@ serve(async (req) => {
             stripe_session_id: sessionData.id,
             status: 'pending',
             confirmation_status: 'pending'
+          })
+
+        // Create notification for seller about incoming payment
+        await supabase
+          .from('notifications')
+          .insert({
+            user_id: bid.products.seller_id,
+            type: 'payment_initiated',
+            title: 'Payment Initiated',
+            message: `Buyer has initiated payment for your product. Transaction will complete once payment is processed.`,
+            related_id: bid_id,
           })
       }
     }

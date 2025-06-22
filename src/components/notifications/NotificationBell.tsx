@@ -8,11 +8,13 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tables } from '@/integrations/supabase/types';
+import { useToast } from '@/hooks/use-toast';
 
 type Notification = Tables<'notifications'>;
 
 const NotificationBell: React.FC = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -21,7 +23,6 @@ const NotificationBell: React.FC = () => {
 
     fetchNotifications();
 
-    // Create a unique channel name for the notification bell
     const channelName = `notification-bell-${user.id}`;
     
     const channel = supabase
@@ -88,6 +89,88 @@ const NotificationBell: React.FC = () => {
     setUnreadCount(0);
   };
 
+  const handleBidAcceptedAction = async (notification: Notification) => {
+    if (!notification.related_id) return;
+
+    try {
+      // Fetch bid details
+      const { data: bid, error } = await supabase
+        .from('bids')
+        .select(`
+          *,
+          products (
+            id,
+            name,
+            price,
+            seller_id,
+            profiles!products_seller_id_fkey (
+              full_name,
+              email
+            )
+          )
+        `)
+        .eq('id', notification.related_id)
+        .single();
+
+      if (error || !bid) {
+        toast({
+          title: "Error",
+          description: "Could not find bid details",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Create marketplace payment
+      const { data, error: paymentError } = await supabase.functions.invoke('create-marketplace-payment', {
+        body: {
+          bid_id: bid.id,
+          product_id: bid.product_id,
+          amount: Number(bid.amount),
+          seller_stripe_account_id: (bid.products as any)?.profiles?.stripe_account_id,
+        },
+      });
+
+      if (paymentError) {
+        toast({
+          title: "Payment Error",
+          description: "Failed to initiate payment. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Open Stripe checkout
+      window.open(data.url, '_blank');
+      
+      // Mark notification as read
+      markAsRead(notification.id);
+
+    } catch (error) {
+      console.error('Payment error:', error);
+      toast({
+        title: "Payment failed",
+        description: "Failed to initiate payment. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const getNotificationAction = (notification: Notification) => {
+    if (notification.type === 'bid_accepted' && notification.related_id) {
+      return (
+        <Button 
+          size="sm" 
+          className="mt-2 w-full"
+          onClick={() => handleBidAcceptedAction(notification)}
+        >
+          Complete Payment
+        </Button>
+      );
+    }
+    return null;
+  };
+
   if (!user) return null;
 
   return (
@@ -126,7 +209,7 @@ const NotificationBell: React.FC = () => {
               {notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className={`p-3 border-b hover:bg-muted/50 cursor-pointer ${
+                  className={`p-3 border-b hover:bg-muted/50 ${
                     !notification.read ? 'bg-blue-50' : ''
                   }`}
                   onClick={() => !notification.read && markAsRead(notification.id)}
@@ -136,6 +219,7 @@ const NotificationBell: React.FC = () => {
                   <p className="text-xs text-muted-foreground mt-1">
                     {new Date(notification.created_at).toLocaleDateString()}
                   </p>
+                  {getNotificationAction(notification)}
                 </div>
               ))}
             </div>
