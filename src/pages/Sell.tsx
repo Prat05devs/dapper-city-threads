@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,13 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, X, Plus, Eye } from 'lucide-react';
+import { Upload, X } from 'lucide-react';
 import ListingPaymentButton from '@/components/payments/ListingPaymentButton';
-
-interface Category {
-  id: number;
-  name: string;
-}
 
 const Sell = () => {
   const { user } = useAuth();
@@ -22,31 +18,35 @@ const Sell = () => {
   const [productName, setProductName] = useState('');
   const [productDescription, setProductDescription] = useState('');
   const [productPrice, setProductPrice] = useState('');
+  const [productCategory, setProductCategory] = useState('');
+  const [productCondition, setProductCondition] = useState('');
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [stripeAccountId, setStripeAccountId] = useState('');
   const [loading, setLoading] = useState(true);
 
+  const categories = [
+    'Electronics',
+    'Clothing & Fashion',
+    'Home & Garden',
+    'Sports & Recreation',
+    'Books & Media',
+    'Vehicles',
+    'Services',
+    'Other'
+  ];
+
+  const conditions = [
+    'New',
+    'Like New',
+    'Good',
+    'Fair',
+    'Poor'
+  ];
+
   useEffect(() => {
-    fetchCategories();
     fetchStripeAccountId();
   }, []);
-
-  const fetchCategories = async () => {
-    try {
-      const { data, error } = await supabase.from('categories').select('*');
-      if (error) throw error;
-      setCategories(data || []);
-    } catch (error: any) {
-      toast({
-        title: "Error fetching categories",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
 
   const fetchStripeAccountId = async () => {
     if (!user) return;
@@ -104,7 +104,7 @@ const Sell = () => {
         throw error;
       }
 
-      const publicURL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/products/${filePath}`;
+      const publicURL = `https://xdsbggqczqfvkhhskvkn.supabase.co/storage/v1/object/public/products/${filePath}`;
       setImageUrls(prevUrls => [...prevUrls, publicURL]);
 
     } catch (error: any) {
@@ -134,7 +134,7 @@ const Sell = () => {
       return;
     }
 
-    if (!productName || !productDescription || !productPrice || imageUrls.length === 0 || !selectedCategory) {
+    if (!productName || !productDescription || !productPrice || imageUrls.length === 0 || !productCategory || !productCondition) {
       toast({
         title: "Missing fields",
         description: "Please fill in all fields and upload at least one image.",
@@ -163,7 +163,8 @@ const Sell = () => {
             price: price,
             image_urls: imageUrls,
             seller_id: user.id,
-            category_id: selectedCategory,
+            category: productCategory,
+            condition: productCondition,
           },
         ])
         .select();
@@ -175,8 +176,9 @@ const Sell = () => {
       setProductName('');
       setProductDescription('');
       setProductPrice('');
+      setProductCategory('');
+      setProductCondition('');
       setImageUrls([]);
-      setSelectedCategory(null);
 
       toast({
         title: "Product listed!",
@@ -250,13 +252,30 @@ const Sell = () => {
                 <select
                   id="category"
                   className="w-full rounded-md border border-gray-200 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-50"
-                  value={selectedCategory || ''}
-                  onChange={(e) => setSelectedCategory(Number(e.target.value))}
+                  value={productCategory}
+                  onChange={(e) => setProductCategory(e.target.value)}
                 >
                   <option value="">Select a category</option>
                   {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <Label htmlFor="condition">Condition</Label>
+                <select
+                  id="condition"
+                  className="w-full rounded-md border border-gray-200 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-50"
+                  value={productCondition}
+                  onChange={(e) => setProductCondition(e.target.value)}
+                >
+                  <option value="">Select condition</option>
+                  {conditions.map((condition) => (
+                    <option key={condition} value={condition}>
+                      {condition}
                     </option>
                   ))}
                 </select>
@@ -298,7 +317,7 @@ const Sell = () => {
           </CardContent>
         </Card>
       ) : (
-        <ListingPaymentButton setLoading={setLoading} setStripeAccountId={setStripeAccountId} />
+        <ListingPaymentButton type="listing_fee" />
       )}
     </div>
   );
