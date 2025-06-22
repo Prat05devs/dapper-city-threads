@@ -15,15 +15,40 @@ serve(async (req) => {
   try {
     console.log('Stripe Connect function started');
 
-    // Get the request body
-    const { country, email, business_type } = await req.json()
-    console.log('Request data:', { country, email, business_type });
-
     const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY')
     if (!STRIPE_SECRET_KEY) {
       console.error('STRIPE_SECRET_KEY is not set');
       throw new Error('STRIPE_SECRET_KEY is not set')
     }
+
+    // Get the authorization header and extract user
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      throw new Error('No authorization header provided')
+    }
+    
+    const token = authHeader.replace('Bearer ', '')
+    
+    console.log('Creating Supabase client...');
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { 
+        auth: { 
+          persistSession: false 
+        } 
+      }
+    )
+
+    console.log('Getting user from token...');
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token)
+    
+    if (userError || !user || !user.email) {
+      console.error('User authentication failed:', userError);
+      throw new Error('Failed to authenticate user or no email found')
+    }
+
+    console.log('User authenticated, email:', user.email);
 
     console.log('Creating Stripe Connect account...');
     
@@ -36,9 +61,9 @@ serve(async (req) => {
       },
       body: new URLSearchParams({
         type: 'standard',
-        country: country || 'IN',
-        email: email,
-        business_type: business_type || 'individual',
+        country: 'IN',
+        email: user.email,
+        business_type: 'individual',
       }),
     })
 
@@ -76,16 +101,9 @@ serve(async (req) => {
       throw new Error(accountLink.error?.message || 'Failed to create account link')
     }
 
-    // Update user profile with Stripe account ID
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
-      throw new Error('No authorization header provided')
-    }
-    
-    const token = authHeader.replace('Bearer ', '')
-    
-    console.log('Creating Supabase client...');
-    const supabase = createClient(
+    // Update user profile with Stripe account ID using service role key
+    console.log('Updating user profile...');
+    const supabaseService = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       { 
@@ -95,16 +113,7 @@ serve(async (req) => {
       }
     )
 
-    console.log('Getting user from token...');
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token)
-    
-    if (userError || !user) {
-      console.error('User authentication failed:', userError);
-      throw new Error('Failed to authenticate user')
-    }
-
-    console.log('Updating user profile...');
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseService
       .from('profiles')
       .update({ 
         stripe_account_id: account.id,
@@ -122,7 +131,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         account_id: account.id,
-        onboarding_url: accountLink.url 
+        url: accountLink.url 
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

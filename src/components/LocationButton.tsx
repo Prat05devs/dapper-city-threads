@@ -36,18 +36,19 @@ const LocationButton = ({ country, city, onCountryChange, onCityChange }: Locati
       <DialogTrigger asChild>
         <Button 
           variant="outline" 
-          className="bg-white/90 backdrop-blur-sm border-purple-200 hover:bg-white/95 shadow-lg hover:shadow-xl transition-all duration-300"
+          className="bg-white/90 backdrop-blur-sm border-purple-200 hover:bg-white/95 shadow-lg hover:shadow-xl transition-all duration-300 text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 h-auto"
         >
-          <MapPin className="w-4 h-4 mr-2 text-purple-600" />
-          <span className="text-gray-700 font-medium">
-            Trending in {city}, {countryObj?.name}
+          <MapPin className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 text-purple-600 flex-shrink-0" />
+          <span className="text-gray-700 font-medium truncate max-w-[120px] sm:max-w-none">
+            <span className="hidden sm:inline">Trending in </span>
+            {city}, {countryObj?.name}
           </span>
-          <ChevronDown className="w-4 h-4 ml-2 text-gray-500" />
+          <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4 ml-1 sm:ml-2 text-gray-500 flex-shrink-0" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md w-[95vw] max-w-[420px] mx-auto">
         <DialogHeader>
-          <DialogTitle>Select Your Location</DialogTitle>
+          <DialogTitle className="text-lg sm:text-xl">Select Your Location</DialogTitle>
         </DialogHeader>
         <div className="py-4">
           <LocationSelector
