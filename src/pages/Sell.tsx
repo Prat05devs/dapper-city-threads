@@ -1,205 +1,200 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
-import { Check, X, MessageSquare } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import ProductForm from '@/components/products/ProductForm';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { Upload, X, Plus, Eye } from 'lucide-react';
+import ListingPaymentButton from '@/components/payments/ListingPaymentButton';
 
-interface Bid {
-  id: string;
-  amount: number;
-  message: string;
-  created_at: string;
-  buyer_id: string;
-  status: string;
-  profiles: {
-    full_name: string;
-    email: string;
-  };
-}
-
-interface Product {
-  id: string;
+interface Category {
+  id: number;
   name: string;
-  price: number;
-  image_urls: string[];
-  status: string;
-  created_at: string;
-  bids: Bid[];
 }
 
 const Sell = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [products, setProducts] = useState<Product[]>([]);
+  const [productName, setProductName] = useState('');
+  const [productDescription, setProductDescription] = useState('');
+  const [productPrice, setProductPrice] = useState('');
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const [stripeAccountId, setStripeAccountId] = useState('');
   const [loading, setLoading] = useState(true);
-  const [counterOffers, setCounterOffers] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
-    if (user) {
-      fetchSellerProducts();
-    }
-  }, [user]);
+    fetchCategories();
+    fetchStripeAccountId();
+  }, []);
 
-  const fetchSellerProducts = async () => {
-    if (!user) return;
-
-    setLoading(true);
-    
-    const { data: productsData, error } = await supabase
-      .from('products')
-      .select(`
-        id,
-        name,
-        price,
-        image_urls,
-        status,
-        created_at,
-        bids!inner (
-          id,
-          amount,
-          message,
-          created_at,
-          buyer_id,
-          status,
-          profiles!bids_buyer_id_fkey (
-            full_name,
-            email
-          )
-        )
-      `)
-      .eq('seller_id', user.id)
-      .order('created_at', { ascending: false });
-
-    if (productsData && !error) {
-      setProducts(productsData as any);
-    }
-
-    setLoading(false);
-  };
-
-  const handleBidAction = async (bidId: string, action: 'accept' | 'reject', productId: string) => {
+  const fetchCategories = async () => {
     try {
-      const { error } = await supabase
-        .from('bids')
-        .update({ 
-          status: action === 'accept' ? 'accepted' : 'rejected',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', bidId);
-
+      const { data, error } = await supabase.from('categories').select('*');
       if (error) throw error;
-
-      // Create notification for buyer
-      const bid = products.flatMap(p => p.bids).find(b => b.id === bidId);
-      if (bid) {
-        await supabase
-          .from('notifications')
-          .insert({
-            user_id: bid.buyer_id,
-            type: action === 'accept' ? 'bid_accepted' : 'bid_rejected',
-            title: action === 'accept' ? 'Bid Accepted!' : 'Bid Rejected',
-            message: action === 'accept' 
-              ? `Your bid has been accepted! You can now complete the payment.`
-              : `Your bid has been rejected. Try submitting a different offer.`,
-            related_id: bidId,
-          });
-      }
-
+      setCategories(data || []);
+    } catch (error: any) {
       toast({
-        title: `Bid ${action}ed!`,
-        description: `The bid has been ${action}ed successfully.`,
-      });
-
-      fetchSellerProducts();
-    } catch (error) {
-      console.error(`Error ${action}ing bid:`, error);
-      toast({
-        title: "Error",
-        description: `Failed to ${action} the bid.`,
+        title: "Error fetching categories",
+        description: error.message,
         variant: "destructive",
       });
     }
   };
 
-  const handleCounterOffer = async (bidId: string, productId: string) => {
-    const counterAmount = counterOffers[bidId];
-    if (!counterAmount) {
+  const fetchStripeAccountId = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('stripe_account_id')
+        .eq('id', user.id)
+        .single();
+
+      if (error) {
+        console.error("Error fetching Stripe Account ID:", error);
+        toast({
+          title: "Error fetching Stripe Account ID",
+          description: "Please try again or contact support.",
+          variant: "destructive",
+        });
+      } else if (data && data.stripe_account_id) {
+        setStripeAccountId(data.stripe_account_id);
+      }
+      setLoading(false);
+    } catch (error) {
+      console.error("Unexpected error fetching Stripe Account ID:", error);
       toast({
-        title: "Error",
-        description: "Please enter a counter offer amount.",
+        title: "Unexpected Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+      setLoading(false);
+    }
+  };
+
+  const uploadImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUploading(true);
+    if (!e.target.files || e.target.files.length === 0) {
+      setUploading(false);
+      return;
+    }
+
+    const file = e.target.files[0];
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random()}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    try {
+      const { data, error } = await supabase.storage
+        .from('products')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      const publicURL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/products/${filePath}`;
+      setImageUrls(prevUrls => [...prevUrls, publicURL]);
+
+    } catch (error: any) {
+      toast({
+        title: "Upload failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeImage = (urlToRemove: string) => {
+    setImageUrls(prevUrls => prevUrls.filter(url => url !== urlToRemove));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!user) {
+      toast({
+        title: "Not authenticated",
+        description: "You must be logged in to list a product.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!productName || !productDescription || !productPrice || imageUrls.length === 0 || !selectedCategory) {
+      toast({
+        title: "Missing fields",
+        description: "Please fill in all fields and upload at least one image.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const price = parseFloat(productPrice);
+    if (isNaN(price) || price <= 0) {
+      toast({
+        title: "Invalid price",
+        description: "Please enter a valid price.",
         variant: "destructive",
       });
       return;
     }
 
     try {
-      // Update the existing bid with counter offer
-      const { error } = await supabase
-        .from('bids')
-        .update({ 
-          amount: Number(counterAmount),
-          status: 'pending',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', bidId);
+      const { data, error } = await supabase
+        .from('products')
+        .insert([
+          {
+            name: productName,
+            description: productDescription,
+            price: price,
+            image_urls: imageUrls,
+            seller_id: user.id,
+            category_id: selectedCategory,
+          },
+        ])
+        .select();
 
-      if (error) throw error;
-
-      // Create notification for buyer
-      const bid = products.flatMap(p => p.bids).find(b => b.id === bidId);
-      if (bid) {
-        await supabase
-          .from('notifications')
-          .insert({
-            user_id: bid.buyer_id,
-            type: 'counter_offer',
-            title: 'Counter Offer Received',
-            message: `Seller has made a counter offer of ₹${counterAmount}`,
-            related_id: bidId,
-          });
+      if (error) {
+        throw error;
       }
 
-      toast({
-        title: "Counter offer sent!",
-        description: "Your counter offer has been sent to the buyer.",
-      });
+      setProductName('');
+      setProductDescription('');
+      setProductPrice('');
+      setImageUrls([]);
+      setSelectedCategory(null);
 
-      setCounterOffers(prev => ({ ...prev, [bidId]: '' }));
-      fetchSellerProducts();
-    } catch (error) {
-      console.error('Error sending counter offer:', error);
       toast({
-        title: "Error",
-        description: "Failed to send counter offer.",
+        title: "Product listed!",
+        description: "Your product has been listed successfully.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Failed to list product",
+        description: error.message,
         variant: "destructive",
       });
-    }
-  };
-
-  const getBidStatusBadge = (status: string) => {
-    switch (status) {
-      case 'accepted':
-        return <Badge className="bg-green-100 text-green-800">Accepted</Badge>;
-      case 'rejected':
-        return <Badge variant="destructive">Rejected</Badge>;
-      case 'pending':
-        return <Badge variant="outline">Pending</Badge>;
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
     }
   };
 
   if (!user) {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
-        <h1 className="text-2xl font-bold mb-4">Please sign in to sell products</h1>
+        <h1 className="text-2xl font-bold mb-4">Please sign in to list a product</h1>
       </div>
     );
   }
@@ -207,134 +202,104 @@ const Sell = () => {
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
-        <p>Loading your products...</p>
+        <p>Loading...</p>
       </div>
     );
   }
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Sell Your Products</h1>
-      
-      <Tabs defaultValue="list" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="list">List New Product</TabsTrigger>
-          <TabsTrigger value="manage">Manage Products & Bids</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="list">
-          <ProductForm onSuccess={fetchSellerProducts} />
-        </TabsContent>
-        
-        <TabsContent value="manage" className="space-y-4">
-          {products.length === 0 ? (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <p className="text-muted-foreground">No products with bids found.</p>
-              </CardContent>
-            </Card>
-          ) : (
-            products.map((product) => (
-              <Card key={product.id}>
-                <CardHeader>
-                  <CardTitle className="text-lg">{product.name}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-start space-x-4 mb-4">
-                    <img
-                      src={product.image_urls?.[0] || '/placeholder.svg'}
-                      alt={product.name}
-                      className="w-20 h-20 object-cover rounded"
-                    />
-                    <div className="flex-1">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm text-muted-foreground">Asking price:</span>
-                        <span className="font-semibold">₹{product.price}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Bids received:</span>
-                        <span>{product.bids.length}</span>
-                      </div>
+      <h1 className="text-3xl font-bold mb-8">List a Product</h1>
+
+      {stripeAccountId ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Product Details</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="name">Product Name</Label>
+                <Input
+                  type="text"
+                  id="name"
+                  value={productName}
+                  onChange={(e) => setProductName(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="description">Product Description</Label>
+                <Textarea
+                  id="description"
+                  value={productDescription}
+                  onChange={(e) => setProductDescription(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="price">Price</Label>
+                <Input
+                  type="number"
+                  id="price"
+                  value={productPrice}
+                  onChange={(e) => setProductPrice(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="category">Category</Label>
+                <select
+                  id="category"
+                  className="w-full rounded-md border border-gray-200 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-50"
+                  value={selectedCategory || ''}
+                  onChange={(e) => setSelectedCategory(Number(e.target.value))}
+                >
+                  <option value="">Select a category</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <Label>Images</Label>
+                <div className="flex space-x-2">
+                  <Input
+                    type="file"
+                    id="image"
+                    className="hidden"
+                    onChange={uploadImage}
+                  />
+                  <Label htmlFor="image" className="flex items-center justify-center rounded-md border border-gray-200 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-50 cursor-pointer">
+                    <Upload className="mr-2 h-4 w-4" /> Upload
+                  </Label>
+                  {uploading && <Badge variant="secondary">Uploading...</Badge>}
+                </div>
+                <div className="mt-2 flex space-x-2">
+                  {imageUrls.map((url) => (
+                    <div key={url} className="relative">
+                      <img src={url} alt="Product" className="h-20 w-20 rounded object-cover" />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-0 right-0 h-6 w-6 rounded-full"
+                        onClick={() => removeImage(url)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
-                  </div>
+                  ))}
+                </div>
+              </div>
 
-                  <div className="space-y-4">
-                    <h4 className="font-medium">Bids:</h4>
-                    {product.bids.map((bid) => (
-                      <div key={bid.id} className="border rounded-lg p-4 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium">{bid.profiles.full_name}</p>
-                            <p className="text-sm text-muted-foreground">{bid.profiles.email}</p>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-lg font-bold">₹{bid.amount}</div>
-                            {getBidStatusBadge(bid.status)}
-                          </div>
-                        </div>
-
-                        {bid.message && (
-                          <div className="bg-gray-50 p-3 rounded">
-                            <p className="text-sm">{bid.message}</p>
-                          </div>
-                        )}
-
-                        {bid.status === 'pending' && (
-                          <div className="space-y-3">
-                            <div className="flex gap-2">
-                              <Button 
-                                onClick={() => handleBidAction(bid.id, 'accept', product.id)}
-                                size="sm"
-                                className="bg-green-600 hover:bg-green-700"
-                              >
-                                <Check className="w-4 h-4 mr-1" />
-                                Accept
-                              </Button>
-                              <Button 
-                                onClick={() => handleBidAction(bid.id, 'reject', product.id)}
-                                size="sm"
-                                variant="destructive"
-                              >
-                                <X className="w-4 h-4 mr-1" />
-                                Reject
-                              </Button>
-                            </div>
-
-                            <div className="flex gap-2">
-                              <input
-                                type="number"
-                                placeholder="Counter offer amount"
-                                value={counterOffers[bid.id] || ''}
-                                onChange={(e) => setCounterOffers(prev => ({ 
-                                  ...prev, 
-                                  [bid.id]: e.target.value 
-                                }))}
-                                className="flex-1 px-3 py-2 border rounded-md"
-                              />
-                              <Button 
-                                onClick={() => handleCounterOffer(bid.id, product.id)}
-                                size="sm"
-                                variant="outline"
-                              >
-                                <MessageSquare className="w-4 h-4 mr-1" />
-                                Counter Offer
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-
-                        <p className="text-xs text-muted-foreground">
-                          Bid placed on {new Date(bid.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </TabsContent>
-      </Tabs>
+              <Button type="submit">List Product</Button>
+            </form>
+          </CardContent>
+        </Card>
+      ) : (
+        <ListingPaymentButton setLoading={setLoading} setStripeAccountId={setStripeAccountId} />
+      )}
     </div>
   );
 };
