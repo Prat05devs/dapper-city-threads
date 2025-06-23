@@ -2,7 +2,7 @@
 
 ## Project info
 
-**URL**: https://lovable.dev/projects/cae1230a-9580-42a4-a6d9-f6c16a7586ed
+**URL**: https://dapper-city-threads.lovable.app/
 
 ## How can I edit this code?
 
