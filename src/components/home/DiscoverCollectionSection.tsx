@@ -41,19 +41,19 @@ const DiscoverCollectionSection = () => {
         <div className="mt-16 space-y-24">
           <DiscoverCard 
             title="Vintage Finds for the Bold" 
-            imageUrl="/placeholder.svg"
+            imageUrl="/home5.jpg"
             link="/buy?category=vintage"
             align="left"
           />
           <DiscoverCard 
             title="Premium Designer Steals" 
-            imageUrl="/placeholder.svg"
+            imageUrl="/home6.jpg"
             link="/buy?category=designer"
             align="right"
           />
            <DiscoverCard 
             title="Curated Streetwear Staples" 
-            imageUrl="/placeholder.svg"
+            imageUrl="/home7.jpg"
             link="/buy?category=streetwear"
             align="left"
           />

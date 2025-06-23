@@ -7,7 +7,7 @@ const HeroSection = () => {
   return (
     <section className="bg-background text-foreground">
       <div className="container mx-auto px-4 py-24 sm:py-32">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="grid lg:grid-cols-2 gap-6 items-center">
           
           {/* Text Content */}
           <div className="space-y-6">
@@ -31,12 +31,12 @@ const HeroSection = () => {
           {/* Image Collage */}
           <div className="relative h-[500px] hidden lg:block">
             <img 
-              src="/placeholder.svg" 
+              src="/home2.webp" 
               alt="Stylish person wearing thrifted fashion" 
               className="absolute top-0 left-0 w-[60%] h-[70%] object-cover rounded-2xl shadow-xl"
             />
             <img 
-              src="/placeholder.svg" 
+              src="/dapper.png" 
               alt="Close-up of a premium clothing item" 
               className="absolute bottom-0 right-0 w-[55%] h-[55%] object-cover rounded-2xl shadow-xl border-8 border-background"
             />

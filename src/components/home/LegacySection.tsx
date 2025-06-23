@@ -11,12 +11,12 @@ const LegacySection = () => {
           {/* Image Collage */}
           <div className="relative h-[400px] md:h-[500px]">
              <img 
-              src="/placeholder.svg" 
+              src="/hero.jpg" 
               alt="Sustainable fashion concept" 
               className="absolute top-0 left-0 w-[65%] h-[65%] object-cover rounded-2xl shadow-xl"
             />
             <img 
-              src="/placeholder.svg" 
+              src="/home3.jpg" 
               alt="Hands holding a clothing item" 
               className="absolute bottom-0 right-0 w-[50%] h-[50%] object-cover rounded-2xl shadow-xl border-8 border-background"
             />

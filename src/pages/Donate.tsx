@@ -96,7 +96,7 @@ ${formData.fullName}
             We've created a seamless process for you to make a meaningful impact. For a small pickup fee, we handle the logistics, ensuring your items find a new home or are responsibly recycled.
           </p>
         </div>
-        <img src="/DonationImpact.jpg" alt="Donated clothing" className="mt-16 w-full h-[500px] object-cover rounded-2xl" />
+        <img src="/DonationImpact.webp" alt="Donated clothing" className="mt-16 w-full h-[500px] object-cover rounded-2xl" />
       </section>
 
       {/* Impact Section */}

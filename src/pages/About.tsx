@@ -14,9 +14,7 @@ const About = () => {
   ];
 
   const designers = [
-    { name: 'Prateek Thapliyal', role: 'Founder & CEO', image: '/Founder.jpeg' },
-    { name: 'Jane Doe', role: 'Head of Curation', image: '/placeholder.svg' },
-    { name: 'John Smith', role: 'Lead Developer', image: '/placeholder.svg' },
+    { name: 'Prateek Thapliyal', role: 'Founder & CEO', image: '/Founder.jpeg' }
   ];
 
   return (
@@ -35,7 +33,7 @@ const About = () => {
             We are dedicated to more than just commerce. We're building a movement that celebrates conscious consumption and the timeless appeal of well-made clothing.
           </p>
         </div>
-        <img src="/placeholder.svg" alt="Team at Dapper" className="mt-16 w-full h-[500px] object-cover rounded-2xl" />
+        <img src="/about.webp" alt="Team at Dapper" className="mt-16 w-full h-[500px] object-cover rounded-2xl" />
       </section>
 
       {/* Inside Dapper Section */}
@@ -63,7 +61,7 @@ const About = () => {
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold uppercase tracking-widest">OUR VALUES</h3>
                 <p className="text-muted-foreground max-w-md">Rooted in the belief that great style and a healthy planet can coexist, our values guide every decision we make.</p>
-                <img src="/placeholder.svg" alt="Curated clothing item" className="w-full h-auto object-cover rounded-2xl pt-8" />
+                <img src="/dapper.png" alt="Curated clothing item" className="w-full h-auto object-cover rounded-2xl pt-1" />
               </div>
               <div>
                 {values.map(value => (

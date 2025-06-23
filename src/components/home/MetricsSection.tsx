@@ -19,7 +19,7 @@ const MetricsSection = () => {
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 items-center">
           <div className="hidden md:block">
-            <img src="/placeholder.svg" alt="Fashion item" className="w-2/3 mx-auto"/>
+            <img src="/home8.jpg" alt="Fashion item" className="w-2/3 mx-auto"/>
           </div>
           
           <div className="col-span-2 grid grid-cols-3 gap-8">
