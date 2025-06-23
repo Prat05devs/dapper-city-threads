@@ -106,8 +106,8 @@ const Sell = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-8">
+    <div className="container mx-auto px-2 sm:px-4 py-6 sm:py-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
         <h1 className="text-3xl font-bold">Seller Dashboard</h1>
         <div className="flex items-center gap-4">
           {stripeConnected ? (
@@ -138,38 +138,40 @@ const Sell = () => {
         </Alert>
       )}
       
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard title="Total Revenue" value={stats.revenue} icon={<DollarSign className="h-4 w-4 text-muted-foreground" />} formatAsCurrency />
         <StatCard title="Total Sales" value={stats.sales} icon={<ShoppingCart className="h-4 w-4 text-muted-foreground" />} />
         <StatCard title="Active Listings" value={stats.active} icon={<List className="h-4 w-4 text-muted-foreground" />} />
         <StatCard title="Pending Orders" value={stats.pending} icon={<Clock className="h-4 w-4 text-muted-foreground" />} />
       </div>
 
-      <Card>
+      <Card className="w-full">
         <CardHeader>
           <CardTitle>Recent Listings</CardTitle>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Product</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Created</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {recentListings.map(listing => (
-                <TableRow key={listing.id}>
-                  <TableCell className="font-medium">{listing.name}</TableCell>
-                  <TableCell className="capitalize">{listing.status}</TableCell>
-                  <TableCell>₹{listing.price.toLocaleString()}</TableCell>
-                  <TableCell>{new Date(listing.created_at).toLocaleDateString()}</TableCell>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto w-full">
+            <Table className="min-w-[600px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Product</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Price</TableHead>
+                  <TableHead>Created</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {recentListings.map(listing => (
+                  <TableRow key={listing.id}>
+                    <TableCell className="font-medium">{listing.name}</TableCell>
+                    <TableCell className="capitalize">{listing.status}</TableCell>
+                    <TableCell>₹{listing.price.toLocaleString()}</TableCell>
+                    <TableCell>{new Date(listing.created_at).toLocaleDateString()}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

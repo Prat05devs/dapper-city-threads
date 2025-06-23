@@ -345,10 +345,10 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto mx-4 p-0">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
+      <DialogContent className="max-w-3xl w-full sm:max-w-4xl md:max-w-5xl lg:max-w-7xl max-h-[95vh] overflow-y-auto p-2 sm:p-4 md:p-6 rounded-xl shadow-xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8">
           {/* Left side - Images */}
-          <div className="bg-gray-50 p-6">
+          <div className="bg-gray-50 p-2 sm:p-4 md:p-6 rounded-lg">
             {product.image_urls && product.image_urls.length > 1 ? (
               <Carousel className="w-full">
                 <CarouselContent>
@@ -388,11 +388,11 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
           </div>
 
           {/* Right side - Details */}
-          <div className="p-6 space-y-6 overflow-y-auto max-h-[95vh]">
-            <div className="flex items-start justify-between">
+          <div className="p-2 sm:p-4 md:p-6 space-y-6 overflow-y-auto max-h-[80vh] rounded-lg bg-white">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
               <div className="flex-1">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">{product.name}</h2>
-                <div className="flex items-center gap-2 mb-3">
+                <h2 className="text-2xl font-bold text-gray-900 mb-2 break-words">{product.name}</h2>
+                <div className="flex items-center gap-2 mb-3 flex-wrap">
                   <Badge variant="secondary" className="text-sm">
                     {product.condition}
                   </Badge>
@@ -427,7 +427,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
             {product.description && (
               <div>
                 <h3 className="font-semibold mb-2 text-gray-900">Description</h3>
-                <p className="text-gray-700 leading-relaxed">{product.description}</p>
+                <p className="text-gray-700 leading-relaxed break-words">{product.description}</p>
               </div>
             )}
 

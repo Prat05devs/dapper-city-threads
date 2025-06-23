@@ -80,8 +80,8 @@ const CreateListing = () => {
   return (
     <DashboardLayout>
       <h1 className="text-3xl font-bold mb-8">Create New Listing</h1>
-      <div className="max-w-3xl">
-        <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="max-w-3xl w-full px-2 sm:px-4">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           <div className="space-y-2">
             <Label htmlFor="productName">Product Title</Label>
             <Input id="productName" value={productName} onChange={(e) => setProductName(e.target.value)} placeholder="e.g., Vintage Leather Jacket" />
@@ -92,7 +92,7 @@ const CreateListing = () => {
             <Textarea id="productDescription" value={productDescription} onChange={(e) => setProductDescription(e.target.value)} placeholder="Describe the item, its condition, brand, etc." rows={5} />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <div className="space-y-2">
               <Label htmlFor="productPrice">Price (₹)</Label>
               <Input id="productPrice" type="number" value={productPrice} onChange={(e) => setProductPrice(e.target.value)} placeholder="e.g., 2500" />
@@ -116,7 +116,7 @@ const CreateListing = () => {
 
           <div className="space-y-4">
             <Label>Images</Label>
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
               {imageUrls.map(url => (
                 <div key={url} className="relative group">
                   <img src={url} alt="Uploaded product" className="w-full h-auto object-cover aspect-square rounded-md" />
