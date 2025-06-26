@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tables } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
+import { sanitizeHTML, sanitizeText } from '@/lib/sanitize';
 import {
   Carousel,
   CarouselContent,
@@ -19,7 +20,11 @@ import {
 
 type Product = Tables<'products'>;
 type Profile = Tables<'profiles'>;
-type SellerReview = Tables<'seller_reviews'>;
+type SellerReview = Tables<'seller_reviews'> & {
+  buyer?: {
+    full_name: string | null;
+  };
+};
 
 interface ProductModalProps {
   product: Product | null;
@@ -81,7 +86,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
       .limit(10);
 
     if (data && !error) {
-      setReviews(data as any);
+      setReviews(data as SellerReview[]);
     }
   };
 
@@ -145,6 +150,25 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
       return;
     }
 
+    const bidAmountNum = Number(bidAmount);
+    if (bidAmountNum <= 0) {
+      toast({
+        title: "Invalid amount",
+        description: "Bid amount must be greater than 0.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (bidAmountNum > product.price) {
+      toast({
+        title: "Invalid amount",
+        description: "Bid amount cannot exceed the product price.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     const { data: bidData, error } = await supabase
@@ -152,7 +176,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
       .insert({
         product_id: product.id,
         buyer_id: user.id,
-        amount: Number(bidAmount),
+        amount: bidAmountNum,
         message: bidMessage,
       })
       .select()
@@ -287,6 +311,32 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
     setPaymentLoading(true);
 
     try {
+      // Fetch seller profile to get Stripe account ID
+      const { data: sellerProfile, error: sellerError } = await supabase
+        .from('profiles')
+        .select('stripe_account_id')
+        .eq('id', product.seller_id)
+        .single();
+
+      if (sellerError || !sellerProfile) {
+        toast({
+          title: "Error",
+          description: "Could not find seller information",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check if seller has connected Stripe account
+      if (!sellerProfile.stripe_account_id) {
+        toast({
+          title: "Payment Unavailable",
+          description: "The seller hasn't set up their payment account yet. Please contact the seller.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Create a bid at full price first
       const { data: bidData, error: bidError } = await supabase
         .from('bids')
@@ -302,13 +352,13 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
 
       if (bidError) throw bidError;
 
-      // Create marketplace payment with commission handling
+      // Create marketplace payment with correct parameter names
       const { data, error } = await supabase.functions.invoke('create-marketplace-payment', {
         body: {
-          bidId: bidData.id,
+          bid_id: bidData.id,
+          product_id: product.id,
           amount: Number(product.price),
-          sellerId: product.seller_id,
-          productId: product.id,
+          seller_stripe_account_id: sellerProfile.stripe_account_id,
         },
       });
 
@@ -427,7 +477,10 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
             {product.description && (
               <div>
                 <h3 className="font-semibold mb-2 text-gray-900">Description</h3>
-                <p className="text-gray-700 leading-relaxed break-words">{product.description}</p>
+                <p 
+                  className="text-gray-700 leading-relaxed break-words"
+                  dangerouslySetInnerHTML={{ __html: sanitizeHTML(product.description) }}
+                />
               </div>
             )}
 
@@ -607,14 +660,17 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
                       <div key={review.id} className="border-b pb-4 last:border-b-0">
                         <div className="flex items-center justify-between mb-2">
                           <span className="font-medium text-gray-900">
-                            {(review as any).buyer?.full_name || 'Anonymous'}
+                            {review.buyer?.full_name || 'Anonymous'}
                           </span>
                           <div className="flex">
                             {renderStars(review.rating)}
                           </div>
                         </div>
                         {review.comment && (
-                          <p className="text-gray-600 mb-1">{review.comment}</p>
+                          <p 
+                            className="text-gray-600 mb-1"
+                            dangerouslySetInnerHTML={{ __html: sanitizeHTML(review.comment) }}
+                          />
                         )}
                         <p className="text-xs text-gray-400">
                           {new Date(review.created_at).toLocaleDateString()}

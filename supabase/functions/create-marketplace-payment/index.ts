@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -23,6 +22,57 @@ serve(async (req) => {
     const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY')
     if (!STRIPE_SECRET_KEY) {
       throw new Error('STRIPE_SECRET_KEY is not set')
+    }
+
+    // Get authenticated user
+    const authHeader = req.headers.get('Authorization')!
+    const token = authHeader.replace('Bearer ', '')
+    
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    )
+
+    const { data: { user } } = await supabase.auth.getUser(token)
+    if (!user) {
+      throw new Error('User not authenticated')
+    }
+
+    // Get bid details and validate
+    const { data: bid, error: bidError } = await supabase
+      .from('bids')
+      .select('*, products!inner(*)')
+      .eq('id', bid_id)
+      .single()
+
+    if (bidError || !bid) {
+      throw new Error('Bid not found')
+    }
+
+    // Validate that the buyer is not the seller
+    if (bid.buyer_id === bid.products.seller_id) {
+      throw new Error('Buyer cannot be the seller')
+    }
+
+    // Validate that the current user is the buyer
+    if (bid.buyer_id !== user.id) {
+      throw new Error('Unauthorized: Only the bidder can initiate payment')
+    }
+
+    // Validate that the bid is accepted
+    if (bid.status !== 'accepted') {
+      throw new Error('Bid must be accepted before payment can be initiated')
+    }
+
+    // Validate payment amount matches bid amount (not product price)
+    if (amount !== bid.amount) {
+      throw new Error('Payment amount does not match accepted bid amount')
+    }
+
+    // Validate product ID matches
+    if (product_id !== bid.products.id) {
+      throw new Error('Product ID mismatch')
     }
 
     // Calculate platform fee (5%)
@@ -59,52 +109,32 @@ serve(async (req) => {
     }
 
     // Store transaction record
-    const authHeader = req.headers.get('Authorization')!
-    const token = authHeader.replace('Bearer ', '')
-    
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    )
-
-    const { data: { user } } = await supabase.auth.getUser(token)
-    
     if (user) {
-      // Get bid details
-      const { data: bid } = await supabase
-        .from('bids')
-        .select('*, products!inner(seller_id)')
-        .eq('id', bid_id)
-        .single()
+      await supabase
+        .from('transactions')
+        .insert({
+          bid_id: bid_id,
+          buyer_id: user.id,
+          seller_id: bid.products.seller_id,
+          product_id: product_id,
+          amount: amount,
+          platform_fee: platformFee / 100,
+          seller_amount: (totalAmount - platformFee) / 100,
+          stripe_session_id: sessionData.id,
+          status: 'pending',
+          confirmation_status: 'pending'
+        })
 
-      if (bid) {
-        await supabase
-          .from('transactions')
-          .insert({
-            bid_id: bid_id,
-            buyer_id: user.id,
-            seller_id: bid.products.seller_id,
-            product_id: product_id,
-            amount: amount,
-            platform_fee: platformFee / 100,
-            seller_amount: (totalAmount - platformFee) / 100,
-            stripe_session_id: sessionData.id,
-            status: 'pending',
-            confirmation_status: 'pending'
-          })
-
-        // Create notification for seller about incoming payment
-        await supabase
-          .from('notifications')
-          .insert({
-            user_id: bid.products.seller_id,
-            type: 'payment_initiated',
-            title: 'Payment Initiated',
-            message: `Buyer has initiated payment for your product. Transaction will complete once payment is processed.`,
-            related_id: bid_id,
-          })
-      }
+      // Create notification for seller about incoming payment
+      await supabase
+        .from('notifications')
+        .insert({
+          user_id: bid.products.seller_id,
+          type: 'payment_initiated',
+          title: 'Payment Initiated',
+          message: `Buyer has initiated payment for your product. Transaction will complete once payment is processed.`,
+          related_id: bid_id,
+        })
     }
 
     return new Response(
@@ -119,7 +149,15 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('Error:', error)
+    console.error('Marketplace payment creation error:', {
+      error: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString(),
+      user_id: user?.id || 'unknown',
+      bid_id: bid_id || 'unknown',
+      product_id: product_id || 'unknown',
+      amount: amount || 'unknown'
+    })
     return new Response(
       JSON.stringify({ error: error.message }),
       { 

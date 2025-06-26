@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -93,7 +92,7 @@ const NotificationBell: React.FC = () => {
     if (!notification.related_id) return;
 
     try {
-      // Fetch bid details
+      // Fetch bid details with seller profile information
       const { data: bid, error } = await supabase
         .from('bids')
         .select(`
@@ -102,11 +101,7 @@ const NotificationBell: React.FC = () => {
             id,
             name,
             price,
-            seller_id,
-            profiles!products_seller_id_fkey (
-              full_name,
-              email
-            )
+            seller_id
           )
         `)
         .eq('id', notification.related_id)
@@ -121,20 +116,47 @@ const NotificationBell: React.FC = () => {
         return;
       }
 
+      // Fetch seller profile to get Stripe account ID
+      const { data: sellerProfile, error: sellerError } = await supabase
+        .from('profiles')
+        .select('stripe_account_id')
+        .eq('id', bid.products.seller_id)
+        .single();
+
+      if (sellerError || !sellerProfile) {
+        toast({
+          title: "Error",
+          description: "Could not find seller information",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check if seller has connected Stripe account
+      if (!sellerProfile.stripe_account_id) {
+        toast({
+          title: "Payment Unavailable",
+          description: "The seller hasn't set up their payment account yet. Please contact the seller.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Create marketplace payment
       const { data, error: paymentError } = await supabase.functions.invoke('create-marketplace-payment', {
         body: {
           bid_id: bid.id,
           product_id: bid.product_id,
           amount: Number(bid.amount),
-          seller_stripe_account_id: (bid.products as any)?.profiles?.stripe_account_id,
+          seller_stripe_account_id: sellerProfile.stripe_account_id,
         },
       });
 
       if (paymentError) {
+        console.error('Payment error details:', paymentError);
         toast({
           title: "Payment Error",
-          description: "Failed to initiate payment. Please try again.",
+          description: paymentError.message || "Failed to initiate payment. Please try again.",
           variant: "destructive",
         });
         return;

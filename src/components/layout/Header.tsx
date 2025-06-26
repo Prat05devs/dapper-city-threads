@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Search, User, Sun, Moon, Menu, X, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +10,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
-import AuthModal from '@/components/auth/AuthModal';
 import NotificationBell from '@/components/notifications/NotificationBell';
 import LocationButton from '@/components/LocationButton';
 
@@ -26,8 +25,8 @@ const countries = [
 const Header = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, signOut, location: currentLocation, setLocation } = useAuth();
 
   const toggleDarkMode = () => {
@@ -122,11 +121,8 @@ const Header = () => {
               {/* User Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="flex items-center space-x-2 hover:bg-purple-50 dark:hover:bg-purple-900/20 text-gray-700 dark:text-gray-300">
-                    <User className="w-4 h-4" />
-                    <span className="hidden sm:inline text-sm">
-                      {user ? user.email?.split('@')[0] : 'Account'}
-                    </span>
+                  <Button variant="ghost" size="icon">
+                    <User className="w-5 h-5" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-gray-800 border shadow-lg dark:border-gray-700">
@@ -143,9 +139,14 @@ const Header = () => {
                       </DropdownMenuItem>
                     </>
                   ) : (
-                    <DropdownMenuItem onClick={() => setIsAuthModalOpen(true)} className="dark:hover:bg-gray-700">
-                      Sign In
-                    </DropdownMenuItem>
+                    <>
+                      <DropdownMenuItem onClick={() => navigate('/signin')} className="dark:hover:bg-gray-700">
+                        Sign In
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate('/signup')} className="dark:hover:bg-gray-700">
+                        Sign Up
+                      </DropdownMenuItem>
+                    </>
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -239,8 +240,6 @@ const Header = () => {
           )}
         </div>
       </header>
-
-      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
     </>
   );
 };

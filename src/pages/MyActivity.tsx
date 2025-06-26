@@ -94,7 +94,7 @@ const MyActivity = () => {
     // Notify buyer
     await supabase.from('notifications').insert({
       user_id: bid.buyer_id,
-      type: 'bid_selected',
+      type: 'bid_accepted',
       title: 'Your bid was accepted!',
       message: `Your bid of ₹${bid.amount} for ${selectedProduct.name} was accepted. Complete your payment to proceed.`,
       related_id: bid.id,
