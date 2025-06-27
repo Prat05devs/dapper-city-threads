@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, User, Phone, MapPin, Info } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Phone, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,7 +15,6 @@ const SignUp = () => {
     email: '',
     phone: '',
     city: '',
-    bio: '',
     password: '',
   });
   const [loading, setLoading] = useState(false);
@@ -31,7 +30,6 @@ const SignUp = () => {
     if (!formData.phone.trim()) newErrors.phone = 'Phone number is required';
     else if (!/^\+?\d{10,15}$/.test(formData.phone)) newErrors.phone = 'Please enter a valid phone number';
     if (!formData.city.trim()) newErrors.city = 'City is required';
-    if (!formData.bio.trim()) newErrors.bio = 'Bio is required';
     if (!formData.password) newErrors.password = 'Password is required';
     else if (formData.password.length < 6) newErrors.password = 'Password must be at least 6 characters';
     setErrors(newErrors);
@@ -159,24 +157,6 @@ const SignUp = () => {
               </div>
               {errors.city && <p className="text-red-500 text-sm mt-1">{errors.city}</p>}
             </div>
-            {/* Bio */}
-            <div>
-              <Label htmlFor="bio" className="text-sm font-medium text-zinc-700 dark:text-zinc-200">Bio</Label>
-              <div className="relative mt-2">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400">
-                  <Info className="w-4 h-4" />
-                </span>
-                <Textarea
-                  id="bio"
-                  placeholder="Tell us a bit about yourself..."
-                  className="pl-10 pr-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-black dark:focus:ring-white min-h-[48px]"
-                  value={formData.bio}
-                  onChange={(e) => handleInputChange('bio', e.target.value)}
-                  required
-                />
-              </div>
-              {errors.bio && <p className="text-red-500 text-sm mt-1">{errors.bio}</p>}
-            </div>
             {/* Password */}
             <div>
               <Label htmlFor="password" className="text-sm font-medium text-zinc-700 dark:text-zinc-200">Password</Label>
@@ -224,7 +204,18 @@ const SignUp = () => {
       </div>
       {/* Right Side - Welcome Panel */}
       <div className="hidden md:flex flex-1 items-center justify-center bg-black dark:bg-zinc-950 rounded-l-3xl p-12 relative overflow-hidden min-h-[600px]">
-        <div className="max-w-md w-full text-white">
+        {/* Video background */}
+        <video
+          className="absolute inset-0 w-full h-full object-cover z-0"
+          src="/SingUpVideo.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+        />
+        {/* Overlay for readability */}
+        <div className="absolute inset-0 bg-black/70 dark:bg-zinc-950/80 z-0" />
+        <div className="max-w-md w-full text-white relative z-10">
           <div className="flex items-center space-x-2 mb-8">
             <img src="/dapper.png" alt="Dapper Logo" className="w-10 h-10 rounded-lg bg-white p-1" />
             <span className="font-semibold text-lg">Dapper</span>

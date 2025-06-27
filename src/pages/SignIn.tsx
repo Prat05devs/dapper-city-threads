@@ -138,7 +138,18 @@ const SignIn = () => {
       </div>
       {/* Right Side - Welcome Panel */}
       <div className="hidden md:flex flex-1 items-center justify-center bg-black dark:bg-zinc-950 rounded-l-3xl p-12 relative overflow-hidden min-h-[600px]">
-        <div className="max-w-md w-full text-white">
+        {/* Video background */}
+        <video
+          className="absolute inset-0 w-full h-full object-cover z-0"
+          src="/signInVideo.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+        />
+        {/* Overlay for readability */}
+        <div className="absolute inset-0 bg-black/70 dark:bg-zinc-950/80 z-0" />
+        <div className="max-w-md w-full text-white relative z-10">
           <div className="flex items-center space-x-2 mb-8">
             <img src="/dapper.png" alt="Dapper Logo" className="w-10 h-10 rounded-lg bg-white p-1" />
             <span className="font-semibold text-lg">Dapper</span>

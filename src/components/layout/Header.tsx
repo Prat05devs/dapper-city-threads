@@ -50,13 +50,17 @@ const Header = () => {
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             {/* Logo */}
-            <Link to="/" className="flex items-center space-x-2 z-10">
-              <div className="w-9 h-9 bg-gradient-to-br from-purple-600 to-blue-600 dark:from-purple-500 dark:to-blue-500 rounded-xl flex items-center justify-center shadow-lg dark:neon-glow">
-                <span className="text-white font-bold text-lg">D</span>
-              </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 dark:from-purple-400 dark:to-blue-400 bg-clip-text text-transparent gradient-text">
-                Dapper
-              </span>
+            <Link to="/" className="flex items-center gap-2">
+              <img
+                src="/logo.png"
+                alt="Dapper Logo"
+                className="h-10 sm:h-12 md:h-14 lg:h-16 w-auto rounded-lg transition-all duration-200 block dark:hidden"
+              />
+              <img
+                src="/logoDark.png"
+                alt="Dapper Logo Dark"
+                className="h-10 sm:h-12 md:h-14 lg:h-16 w-auto rounded-lg transition-all duration-200 hidden dark:block"
+              />
             </Link>
 
             {/* Desktop Navigation */}
