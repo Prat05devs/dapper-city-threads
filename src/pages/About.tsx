@@ -23,17 +23,46 @@ const About = () => {
       {/* Hero Section */}
       <section className="container mx-auto px-2 sm:px-4 py-12 sm:py-20 md:py-24">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12 items-center">
-          <div className="space-y-4 text-center md:text-left">
-            <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tighter">MEET DAPPER</h1>
-            <p className="text-muted-foreground text-base sm:text-lg max-w-md mx-auto md:mx-0">
-              At Dapper, we see a world where fashion is circular. Our platform connects discerning individuals who appreciate style and sustainability, creating a community where every piece has a past and a future.
-            </p>
+          <div className="space-y-4 text-center md:text-left order-2 md:order-1">
+            <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tighter">A Message from the Founder</h1>
+            <div className="bg-background rounded-xl px-6 py-10 shadow-md text-muted-foreground text-base sm:text-lg max-w-3xl mx-auto md:mx-0 leading-relaxed space-y-4 tracking-wide">
+  <p className="text-2xl font-bold text-primary">Hey boys and girls!</p>
+  <p>
+    Let's bring <span className="font-semibold text-foreground">Dapper</span> to life — together. This is a two-way street. It's not just me posting or sourcing pieces from second-hand markets like a typical thrift store. This is bigger. This is about redefining what a thrift store means.
+  </p>
+  <p>
+    Let's come together for the real purpose of thrift: showing the world how fashion can be created and loved through pre-owned gems.
+  </p>
+  <p>
+    So let's go! Let's list those cool pieces you've got. Let's help our fellow Gen Zs build the fashion they've always dreamed of <span className="italic">sustainably, creatively, authentically</span>.
+  </p>
+  <p>
+    Dapper is all about community. It's about showing love to those designer clothes, limited-edition kicks, unique watches the items hiding in your shelves, waiting to be loved again.
+  </p>
+  <p>
+    Don't stash them. Don't toss them. Pass them on to someone who will truly cherish them.
+  </p>
+  <p className="text-lg font-medium text-primary">
+    Let's make Dapper a movement, a revolution. Let's take it global.
+  </p>
+  <p>
+    Open those closets. Dig out those rare finds the pieces that deserve the spotlight again. And while you're at it, explore what others have listed.
+  </p>
+  <p>
+    Maybe that watch you've always wanted is waiting for you. Maybe that one-of-a-kind dress, purse, or blazer is finally within reach.
+  </p>
+  <p className="font-semibold">
+    It's not just fashion, it's a CIRCULAR FASHION ECONOMY. It's a STATEMENT. A COMMUNITY. A VIBE.
+  </p>
+  <p className="text-primary font-bold text-xl">Let's create it TOGETHER.</p>
+  <p className="pt-2 text-sm uppercase tracking-wider text-muted-foreground">#DapperByPrateek</p>
+</div>
+
           </div>
-          <p className="text-muted-foreground text-center md:text-left">
-            We are dedicated to more than just commerce. We're building a movement that celebrates conscious consumption and the timeless appeal of well-made clothing.
-          </p>
+          <div className="order-1 md:order-2 flex justify-center items-center h-full">
+            <img src="/about.jpg" alt="Team at Dapper" className="w-full h-64 sm:h-96 md:h-full object-cover rounded-2xl shadow-lg" />
+          </div>
         </div>
-        <img src="/about.webp" alt="Team at Dapper" className="mt-8 sm:mt-16 w-full h-48 sm:h-80 md:h-[500px] object-cover rounded-2xl" />
       </section>
 
       {/* Inside Dapper Section */}
