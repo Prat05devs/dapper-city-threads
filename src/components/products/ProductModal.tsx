@@ -467,12 +467,15 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
               ₹{product.price.toLocaleString()}
             </div>
 
-            {seller && (
-              <div className="flex items-center space-x-2 text-gray-600">
-                <MapPin className="w-4 h-4" />
-                <span>{seller.city || 'Location not specified'}</span>
-              </div>
-            )}
+            <div className="flex items-center space-x-2 text-gray-600">
+              <MapPin className="w-4 h-4" />
+              <span>
+                {product.city && product.country 
+                  ? `${product.city}, ${product.country}` 
+                  : 'Location not specified'
+                }
+              </span>
+            </div>
 
             {product.description && (
               <div>
