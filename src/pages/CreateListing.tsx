@@ -33,9 +33,9 @@ const CreateListing = () => {
     const file = e.target.files[0];
     const filePath = `${user!.id}/${Date.now()}_${file.name}`;
     try {
-      const { error: uploadError } = await supabase.storage.from('products').upload(filePath, file);
+      const { error: uploadError } = await supabase.storage.from('product-images').upload(filePath, file);
       if (uploadError) throw uploadError;
-      const { data } = supabase.storage.from('products').getPublicUrl(filePath);
+      const { data } = supabase.storage.from('product-images').getPublicUrl(filePath);
       setImageUrls(prev => [...prev, data.publicUrl]);
     } catch (error: any) {
       toast({ title: "Upload Failed", description: error.message, variant: "destructive" });
