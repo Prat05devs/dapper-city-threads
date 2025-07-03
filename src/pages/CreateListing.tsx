@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Upload, X } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import LocationSelector from '@/components/LocationSelector';
 
 const CreateListing = () => {
   const { user } = useAuth();
@@ -18,6 +19,8 @@ const CreateListing = () => {
   const [productPrice, setProductPrice] = useState('');
   const [productCategory, setProductCategory] = useState('');
   const [productCondition, setProductCondition] = useState('');
+  const [city, setCity] = useState('');
+  const [country, setCountry] = useState('IN');
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
 
@@ -49,8 +52,8 @@ const CreateListing = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return toast({ title: "Authentication Error", description: "Please sign in to sell.", variant: "destructive" });
-    if (!productName || !productDescription || !productPrice || !productCategory || !productCondition || imageUrls.length === 0) {
-      return toast({ title: "Missing Information", description: "Please fill out all fields and upload at least one image.", variant: "destructive" });
+    if (!productName || !productDescription || !productPrice || !productCategory || !productCondition || !city || !country || imageUrls.length === 0) {
+      return toast({ title: "Missing Information", description: "Please fill out all fields including location and upload at least one image.", variant: "destructive" });
     }
 
     const { error } = await supabase.from('products').insert([{
@@ -59,6 +62,8 @@ const CreateListing = () => {
       price: parseFloat(productPrice),
       category: productCategory,
       condition: productCondition,
+      city: city,
+      country: country,
       image_urls: imageUrls,
       seller_id: user.id,
       status: 'active'
@@ -73,6 +78,8 @@ const CreateListing = () => {
       setProductPrice('');
       setProductCategory('');
       setProductCondition('');
+      setCity('');
+      setCountry('IN');
       setImageUrls([]);
     }
   };
@@ -112,6 +119,17 @@ const CreateListing = () => {
                 <SelectTrigger><SelectValue placeholder="Select Condition" /></SelectTrigger>
                 <SelectContent>{conditions.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
               </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Location</Label>
+            <LocationSelector
+              valueCountry={country}
+              valueCity={city}
+              onCountryChange={setCountry}
+              onCityChange={setCity}
+              compact={false}
+            />
           </div>
 
           <div className="space-y-4">

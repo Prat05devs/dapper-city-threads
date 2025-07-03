@@ -188,7 +188,9 @@ export type Database = {
       products: {
         Row: {
           category: string
+          city: string | null
           condition: string
+          country: string | null
           created_at: string
           description: string | null
           featured_until: string | null
@@ -206,7 +208,9 @@ export type Database = {
         }
         Insert: {
           category: string
+          city?: string | null
           condition: string
+          country?: string | null
           created_at?: string
           description?: string | null
           featured_until?: string | null
@@ -224,7 +228,9 @@ export type Database = {
         }
         Update: {
           category?: string
+          city?: string | null
           condition?: string
+          country?: string | null
           created_at?: string
           description?: string | null
           featured_until?: string | null

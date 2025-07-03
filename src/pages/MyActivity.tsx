@@ -12,6 +12,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Tables } from '@/integrations/supabase/types';
 import { User } from '@supabase/supabase-js';
 import { useRef } from 'react';
+import EditListing from '@/components/products/EditListing';
 
 const MyActivity = () => {
   const { user } = useAuth();
@@ -24,6 +25,8 @@ const MyActivity = () => {
   const [bidsLoading, setBidsLoading] = useState(false);
   const [acceptingBidId, setAcceptingBidId] = useState<string | null>(null);
   const [sellerProfile, setSellerProfile] = useState<Tables<'profiles'> | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedProductForEdit, setSelectedProductForEdit] = useState<any | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -139,6 +142,20 @@ const MyActivity = () => {
     }
   };
 
+  const openEditModal = (product: any) => {
+    setSelectedProductForEdit(product);
+    setEditModalOpen(true);
+  };
+
+  const closeEditModal = () => {
+    setEditModalOpen(false);
+    setSelectedProductForEdit(null);
+  };
+
+  const handleProductUpdate = () => {
+    fetchUserProducts();
+  };
+
   return (
     <DashboardLayout>
       <h1 className="text-3xl font-bold mb-8">My Listings</h1>
@@ -170,7 +187,7 @@ const MyActivity = () => {
                     <TableCell>₹{product.price.toLocaleString()}</TableCell>
                     <TableCell>{new Date(product.created_at).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right flex flex-col gap-2 items-end">
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon" onClick={() => openEditModal(product)}>
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button variant="ghost" size="icon" onClick={() => handleDelete(product.id)}>
@@ -252,6 +269,14 @@ const MyActivity = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Edit Product Modal */}
+      <EditListing
+        product={selectedProductForEdit}
+        isOpen={editModalOpen}
+        onClose={closeEditModal}
+        onUpdate={handleProductUpdate}
+      />
     </DashboardLayout>
   );
 };
