@@ -21,9 +21,11 @@ const HeroSection = () => {
               <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-8 py-6">
                 <Link to="/buy">Explore Now</Link>
               </Button>
-              <Button variant="ghost" size="lg" className="rounded-full">
-                <PlayCircle className="mr-2 h-5 w-5" />
-                Our Vision
+              <Button asChild variant="ghost" size="lg" className="rounded-full">
+                <Link to="/sell">
+                  <PlayCircle className="mr-2 h-5 w-5" />
+                  Upload a Gem
+                </Link>
               </Button>
             </div>
           </div>
