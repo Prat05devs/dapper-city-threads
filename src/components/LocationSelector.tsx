@@ -17,7 +17,7 @@ const countries = [
 ];
 
 const citiesByCountry: Record<string, { name: string }[]> = {
-  IN: ['Delhi', 'Mumbai', 'Bangalore', 'Hyderabad', 'Kolkata', 'Pune'].map(name => ({ name })),
+  IN: ['Delhi', 'Mumbai', 'Bangalore', 'Dehradun', 'Hyderabad', 'Kolkata', 'Pune'].map(name => ({ name })),
   US: ['New York City', 'Los Angeles', 'Chicago'].map(name => ({ name })),
   UK: ['London', 'Manchester'].map(name => ({ name })),
   AU: ['Sydney', 'Melbourne'].map(name => ({ name })),
