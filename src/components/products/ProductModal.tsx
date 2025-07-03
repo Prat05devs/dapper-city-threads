@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -396,6 +396,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl w-full sm:max-w-4xl md:max-w-5xl lg:max-w-7xl max-h-[95vh] overflow-y-auto p-2 sm:p-4 md:p-6 rounded-xl shadow-xl mx-auto">
+        <DialogTitle className="sr-only">{product.name}</DialogTitle>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8">
           {/* Left side - Images */}
           <div className="bg-gray-50 p-2 sm:p-4 md:p-6 rounded-lg">
