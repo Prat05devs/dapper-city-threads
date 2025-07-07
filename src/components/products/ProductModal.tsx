@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Heart, MapPin, Star, MessageSquare, CreditCard, Send } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { Heart, MapPin, Star, MessageSquare, CreditCard, Send, User, ShoppingCart, DollarSign } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tables } from '@/integrations/supabase/types';
@@ -17,6 +18,12 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 
 type Product = Tables<'products'>;
 type Profile = Tables<'profiles'>;
@@ -50,13 +57,29 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
 
+  const handleBidAmountChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setBidAmount(e.target.value);
+  }, []);
+
+  const handleBidMessageChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setBidMessage(e.target.value);
+  }, []);
+
+  const handleContactMessageChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setContactMessage(e.target.value);
+  }, []);
+
+  const handleReviewCommentChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setReviewComment(e.target.value);
+  }, []);
+
   useEffect(() => {
     if (product && isOpen) {
       fetchSellerData();
       fetchSellerReviews();
       checkIfLiked();
     }
-  }, [product, isOpen, user]);
+  }, [product?.id, isOpen, user?.id]);
 
   const fetchSellerData = async () => {
     if (!product) return;
@@ -103,7 +126,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
     setIsLiked(!!data && !error);
   };
 
-  const toggleLike = async () => {
+  const toggleLike = useCallback(async () => {
     if (!user || !product) {
       toast({
         title: "Please sign in",
@@ -129,9 +152,9 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
         });
       setIsLiked(true);
     }
-  };
+  }, [user, product, isLiked, toast]);
 
-  const placeBid = async () => {
+  const placeBid = useCallback(async () => {
     if (!user || !product) {
       toast({
         title: "Please sign in",
@@ -162,11 +185,10 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
 
     if (bidAmountNum > product.price) {
       toast({
-        title: "Invalid amount",
-        description: "Bid amount cannot exceed the product price.",
-        variant: "destructive",
+        title: "High bid",
+        description: "Your bid is higher than the asking price. The seller may accept it immediately.",
+        variant: "default",
       });
-      return;
     }
 
     setLoading(true);
@@ -209,7 +231,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
     }
 
     setLoading(false);
-  };
+  }, [user, product, bidAmount, bidMessage, toast]);
 
   const submitReview = async () => {
     if (!user || !product) {
@@ -256,13 +278,13 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
       setShowReviewForm(false);
       setReviewComment('');
       setReviewRating(5);
-      fetchSellerReviews(); // Refresh reviews
+      fetchSellerReviews();
     }
 
     setReviewSubmitting(false);
   };
 
-  const sendMessage = async () => {
+  const sendMessage = useCallback(async () => {
     if (!user || !product || !contactMessage.trim()) {
       toast({
         title: "Please sign in and enter a message",
@@ -272,7 +294,6 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
       return;
     }
 
-    // Create notification for seller
     const { error } = await supabase
       .from('notifications')
       .insert({
@@ -296,7 +317,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
       });
       setContactMessage('');
     }
-  };
+  }, [user, product, contactMessage, toast]);
 
   const handleBuyNow = async () => {
     if (!user || !product) {
@@ -311,7 +332,6 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
     setPaymentLoading(true);
 
     try {
-      // Fetch seller profile to get Stripe account ID
       const { data: sellerProfile, error: sellerError } = await supabase
         .from('profiles')
         .select('stripe_account_id')
@@ -327,7 +347,6 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
         return;
       }
 
-      // Check if seller has connected Stripe account
       if (!sellerProfile.stripe_account_id) {
         toast({
           title: "Payment Unavailable",
@@ -337,7 +356,6 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
         return;
       }
 
-      // Create a bid at full price first
       const { data: bidData, error: bidError } = await supabase
         .from('bids')
         .insert({
@@ -352,7 +370,6 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
 
       if (bidError) throw bidError;
 
-      // Create marketplace payment with correct parameter names
       const { data, error } = await supabase.functions.invoke('create-marketplace-payment', {
         body: {
           bid_id: bidData.id,
@@ -364,7 +381,6 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
 
       if (error) throw error;
 
-      // Open Stripe checkout in a new tab
       window.open(data.url, '_blank');
 
     } catch (error) {
@@ -381,7 +397,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
 
   if (!product) return null;
 
-  const renderStars = (rating: number, interactive = false, onStarClick?: (rating: number) => void) => {
+  const renderStars = useCallback((rating: number, interactive = false, onStarClick?: (rating: number) => void) => {
     return [...Array(5)].map((_, i) => (
       <Star
         key={i}
@@ -391,24 +407,196 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
         onClick={() => interactive && onStarClick && onStarClick(i + 1)}
       />
     ));
+  }, []);
+
+  const ActionButtons = () => {
+    if (!user) {
+      return (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+          <h3 className="font-semibold mb-2 text-blue-900">Sign in to interact</h3>
+          <p className="text-blue-700 mb-3">Sign in to purchase, make offers, and contact sellers.</p>
+          <Button className="w-full" variant="outline">Sign In</Button>
+        </div>
+      );
+    }
+
+    if (user.id === product.seller_id) {
+      return (
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+          <p className="text-gray-600">This is your product listing</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        {/* Make Offer Section */}
+        <div className="space-y-3">
+          <h4 className="font-medium text-gray-900 flex items-center gap-2">
+            <DollarSign className="w-4 h-4" />
+            Make an Offer
+          </h4>
+          <div className="flex gap-2">
+            <Input
+              type="number"
+              placeholder="Amount"
+              value={bidAmount}
+              onChange={handleBidAmountChange}
+              className="flex-1"
+            />
+            <Button 
+              onClick={placeBid} 
+              disabled={loading || !bidAmount} 
+              variant="outline"
+            >
+              {loading ? 'Placing...' : 'Bid'}
+            </Button>
+          </div>
+          <Textarea
+            placeholder="Optional message to seller"
+            value={bidMessage}
+            onChange={handleBidMessageChange}
+            rows={2}
+            className="text-sm"
+          />
+        </div>
+
+        {/* Contact Seller Section */}
+        <div className="space-y-3">
+          <h4 className="font-medium text-gray-900 flex items-center gap-2">
+            <MessageSquare className="w-4 h-4" />
+            Contact Seller
+          </h4>
+          <div className="flex gap-2">
+            <Textarea
+              placeholder="Message seller..."
+              value={contactMessage}
+              onChange={handleContactMessageChange}
+              rows={2}
+              className="flex-1"
+            />
+            <Button 
+              onClick={sendMessage} 
+              disabled={!contactMessage.trim()}
+              variant="outline"
+              className="self-end"
+            >
+              <Send className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
   };
+
+  const SellerInfo = () => (
+    <div className="space-y-4">
+      {seller && (
+        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+              <User className="w-5 h-5 text-gray-600" />
+            </div>
+            <div>
+              <h4 className="font-medium text-gray-900">{seller.full_name}</h4>
+              <p className="text-sm text-gray-600">{seller.total_sales || 0} items sold</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="flex items-center gap-1">
+              {renderStars(Math.round(seller.average_rating || 0))}
+            </div>
+            <p className="text-sm text-gray-600">({seller.total_ratings || 0} reviews)</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const ReviewsSection = () => (
+    <div className="space-y-4">
+      {user && user.id !== product.seller_id && (
+        <div className="flex justify-between items-center">
+          <h4 className="font-medium text-gray-900">Customer Reviews</h4>
+          <Button 
+            onClick={() => setShowReviewForm(!showReviewForm)}
+            variant="outline"
+            size="sm"
+          >
+            {showReviewForm ? 'Cancel' : 'Write Review'}
+          </Button>
+        </div>
+      )}
+
+      {showReviewForm && (
+        <div className="p-4 border rounded-lg space-y-3">
+          <div>
+            <label className="block text-sm font-medium mb-2">Rating</label>
+            <div className="flex gap-1">
+              {renderStars(reviewRating, true, setReviewRating)}
+            </div>
+          </div>
+          <Textarea
+            placeholder="Share your experience..."
+            value={reviewComment}
+            onChange={handleReviewCommentChange}
+            rows={3}
+          />
+          <Button 
+            onClick={submitReview} 
+            disabled={reviewSubmitting}
+            className="w-full"
+          >
+            {reviewSubmitting ? 'Submitting...' : 'Submit Review'}
+          </Button>
+        </div>
+      )}
+
+      {reviews.length === 0 ? (
+        <div className="text-center py-8 text-gray-500">
+          <Star className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+          <p>No reviews yet</p>
+        </div>
+      ) : (
+        <div className="space-y-4 max-h-80 overflow-y-auto">
+          {reviews.map((review) => (
+            <div key={review.id} className="pb-4 border-b last:border-b-0">
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-medium">{review.buyer?.full_name || 'Anonymous'}</span>
+                <div className="flex items-center gap-2">
+                  <div className="flex">{renderStars(review.rating)}</div>
+                  <span className="text-xs text-gray-500">
+                    {new Date(review.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+              </div>
+              {review.comment && (
+                <p className="text-gray-600 text-sm">{review.comment}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl w-full sm:max-w-4xl md:max-w-5xl lg:max-w-7xl max-h-[95vh] overflow-y-auto p-2 sm:p-4 md:p-6 rounded-xl shadow-xl mx-auto">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto p-0">
         <DialogTitle className="sr-only">{product.name}</DialogTitle>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8">
-          {/* Left side - Images */}
-          <div className="bg-gray-50 p-2 sm:p-4 md:p-6 rounded-lg">
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 min-h-[600px]">
+          {/* Left - Images (2/3 width on large screens) */}
+          <div className="lg:col-span-2 bg-gray-50 p-4">
             {product.image_urls && product.image_urls.length > 1 ? (
               <Carousel className="w-full">
                 <CarouselContent>
                   {product.image_urls.map((url, index) => (
                     <CarouselItem key={index}>
-                      <div className="aspect-square bg-white rounded-lg overflow-hidden shadow-lg">
+                      <div className="aspect-square bg-white rounded-lg overflow-hidden shadow-sm">
                         <img 
                           src={url} 
-                          alt={`${product.name} - Image ${index + 1}`}
+                          alt={`${product.name} - ${index + 1}`}
                           className="w-full h-full object-cover"
                         />
                       </div>
@@ -419,7 +607,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
                 <CarouselNext className="right-2" />
               </Carousel>
             ) : (
-              <div className="aspect-square bg-white rounded-lg overflow-hidden shadow-lg">
+              <div className="aspect-square bg-white rounded-lg overflow-hidden shadow-sm">
                 {product.image_urls && product.image_urls.length > 0 ? (
                   <img 
                     src={product.image_urls[0]} 
@@ -427,7 +615,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-100">
+                  <div className="w-full h-full flex items-center justify-center text-gray-400">
                     <div className="text-center">
                       <div className="text-6xl mb-2">📷</div>
                       <p>No image available</p>
@@ -438,251 +626,77 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
             )}
           </div>
 
-          {/* Right side - Details */}
-          <div className="p-2 sm:p-4 md:p-6 space-y-6 overflow-y-auto max-h-[80vh] rounded-lg bg-white">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-              <div className="flex-1">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2 break-words">{product.name}</h2>
-                <div className="flex items-center gap-2 mb-3 flex-wrap">
-                  <Badge variant="secondary" className="text-sm">
-                    {product.condition}
-                  </Badge>
-                  <Badge variant="outline" className="text-sm">
-                    {product.category}
-                  </Badge>
+          {/* Right - Product Details (1/3 width on large screens) */}
+          <div className="lg:col-span-1 flex flex-col">
+            {/* Header */}
+            <div className="p-6 border-b">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">{product.name}</h2>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Badge variant="secondary">{product.condition}</Badge>
+                    <Badge variant="outline">{product.category}</Badge>
+                  </div>
+                  <div className="text-3xl font-bold text-green-600 mb-2">
+                    ₹{product.price.toLocaleString()}
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <MapPin className="w-4 h-4" />
+                    <span className="text-sm">
+                      {product.city && product.country 
+                        ? `${product.city}, ${product.country}` 
+                        : 'Location not specified'
+                      }
+                    </span>
+                  </div>
                 </div>
-              </div>
-              {user && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={toggleLike}
-                  className={isLiked ? 'text-red-500' : 'text-gray-400'}
-                >
-                  <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
-                </Button>
-              )}
-            </div>
-
-            <div className="text-3xl font-bold text-green-600">
-              ₹{product.price.toLocaleString()}
-            </div>
-
-            <div className="flex items-center space-x-2 text-gray-600">
-              <MapPin className="w-4 h-4" />
-              <span>
-                {product.city && product.country 
-                  ? `${product.city}, ${product.country}` 
-                  : 'Location not specified'
-                }
-              </span>
-            </div>
-
-            {product.description && (
-              <div>
-                <h3 className="font-semibold mb-2 text-gray-900">Description</h3>
-                <p 
-                  className="text-gray-700 leading-relaxed break-words"
-                  dangerouslySetInnerHTML={{ __html: sanitizeHTML(product.description) }}
-                />
-              </div>
-            )}
-
-            {/* Action Buttons for Authenticated Users */}
-            {user && user.id !== product.seller_id && (
-              <>
-                {/* Buy Now Section */}
-                <div className="border-t pt-6">
-                  <Button 
-                    onClick={handleBuyNow} 
-                    disabled={paymentLoading} 
-                    className="w-full mb-4"
-                    size="lg"
+                {user && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={toggleLike}
+                    className={isLiked ? 'text-red-500' : 'text-gray-400'}
                   >
-                    <CreditCard className="w-4 h-4 mr-2" />
-                    {paymentLoading ? 'Processing...' : `Buy Now - ₹${product.price.toLocaleString()}`}
+                    <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
                   </Button>
-                </div>
-
-                {/* Bid Section */}
-                <div className="border-t pt-6">
-                  <h3 className="font-semibold mb-3 text-gray-900">Make an Offer</h3>
-                  <div className="space-y-3">
-                    <Input
-                      type="number"
-                      placeholder="Enter your offer amount"
-                      value={bidAmount}
-                      onChange={(e) => setBidAmount(e.target.value)}
-                    />
-                    <Textarea
-                      placeholder="Optional message to seller"
-                      value={bidMessage}
-                      onChange={(e) => setBidMessage(e.target.value)}
-                      rows={2}
-                    />
-                    <Button 
-                      onClick={placeBid} 
-                      disabled={loading} 
-                      className="w-full"
-                      variant="outline"
-                    >
-                      {loading ? 'Placing Offer...' : 'Make Offer'}
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Contact Seller Section */}
-                <div className="border-t pt-6">
-                  <h3 className="font-semibold mb-3 text-gray-900">Contact Seller</h3>
-                  <div className="space-y-3">
-                    <Textarea
-                      placeholder="Send a message to the seller..."
-                      value={contactMessage}
-                      onChange={(e) => setContactMessage(e.target.value)}
-                      rows={3}
-                    />
-                    <Button 
-                      onClick={sendMessage} 
-                      disabled={!contactMessage.trim()}
-                      className="w-full"
-                      variant="outline"
-                    >
-                      <Send className="w-4 h-4 mr-2" />
-                      Send Message
-                    </Button>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* Sign In Prompt for Non-Authenticated Users */}
-            {!user && (
-              <div className="border-t pt-6">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h3 className="font-semibold mb-2 text-blue-900">Sign in to interact</h3>
-                  <p className="text-blue-700 mb-3">
-                    Sign in to place bids, contact sellers, and leave reviews.
-                  </p>
-                  <Button className="w-full" variant="outline">
-                    Sign In
-                  </Button>
-                </div>
+                )}
               </div>
-            )}
+            </div>
 
-            {/* Seller Info & Reviews Section */}
-            <div className="border-t pt-6">
-              <h3 className="font-semibold mb-4 text-gray-900">Seller Information</h3>
-              {seller && (
-                <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium text-lg text-gray-900">{seller.full_name}</span>
-                    <div className="flex items-center space-x-2">
-                      <div className="flex">
-                        {renderStars(Math.round(seller.average_rating || 0))}
-                      </div>
-                      <span className="text-sm text-gray-600">
-                        ({seller.total_ratings || 0} reviews)
-                      </span>
-                    </div>
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    {seller.total_sales || 0} items sold
-                  </div>
-                </div>
-              )}
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="p-6 space-y-6">
+                {/* Action Buttons */}
+                <ActionButtons />
 
-              {/* Reviews */}
-              <div className="mb-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-medium text-gray-900">Reviews</h4>
-                  {user && user.id !== product.seller_id && !showReviewForm && (
-                    <Button 
-                      onClick={() => setShowReviewForm(true)}
-                      variant="outline"
-                      size="sm"
-                    >
-                      Write Review
-                    </Button>
-                  )}
-                </div>
-
-                {/* Review Form */}
-                {showReviewForm && (
-                  <div className="mb-6 p-4 border rounded-lg bg-gray-50">
-                    <h5 className="font-medium mb-3 text-gray-900">Write a Review</h5>
-                    <div className="space-y-3">
+                {/* Tabs for Details */}
+                <Tabs defaultValue="description" className="w-full">
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="description">Details</TabsTrigger>
+                    <TabsTrigger value="seller">Seller</TabsTrigger>
+                    <TabsTrigger value="reviews">Reviews</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="description" className="space-y-4">
+                    {product.description && (
                       <div>
-                        <label className="block text-sm font-medium mb-1 text-gray-700">Rating</label>
-                        <div className="flex">
-                          {renderStars(reviewRating, true, setReviewRating)}
-                        </div>
+                        <h3 className="font-semibold mb-2">Description</h3>
+                        <p 
+                          className="text-gray-700 text-sm leading-relaxed"
+                          dangerouslySetInnerHTML={{ __html: sanitizeHTML(product.description) }}
+                        />
                       </div>
-                      <Textarea
-                        placeholder="Share your experience with this seller..."
-                        value={reviewComment}
-                        onChange={(e) => setReviewComment(e.target.value)}
-                        rows={3}
-                      />
-                      <div className="flex gap-2">
-                        <Button 
-                          onClick={submitReview} 
-                          disabled={reviewSubmitting}
-                          size="sm"
-                        >
-                          {reviewSubmitting ? 'Submitting...' : 'Submit Review'}
-                        </Button>
-                        <Button 
-                          onClick={() => setShowReviewForm(false)}
-                          variant="outline"
-                          size="sm"
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {reviews.length === 0 ? (
-                  <div className="text-center py-8 bg-gray-50 rounded-lg">
-                    <div className="text-4xl mb-2">⭐</div>
-                    <p className="text-gray-600 mb-2">No reviews yet</p>
-                    {user && user.id !== product.seller_id && (
-                      <Button 
-                        onClick={() => setShowReviewForm(true)}
-                        variant="outline"
-                        size="sm"
-                      >
-                        Be the first to review this seller
-                      </Button>
                     )}
-                  </div>
-                ) : (
-                  <div className="space-y-4 max-h-60 overflow-y-auto">
-                    {reviews.map((review) => (
-                      <div key={review.id} className="border-b pb-4 last:border-b-0">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-medium text-gray-900">
-                            {review.buyer?.full_name || 'Anonymous'}
-                          </span>
-                          <div className="flex">
-                            {renderStars(review.rating)}
-                          </div>
-                        </div>
-                        {review.comment && (
-                          <p 
-                            className="text-gray-600 mb-1"
-                            dangerouslySetInnerHTML={{ __html: sanitizeHTML(review.comment) }}
-                          />
-                        )}
-                        <p className="text-xs text-gray-400">
-                          {new Date(review.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                  </TabsContent>
+                  
+                  <TabsContent value="seller">
+                    <SellerInfo />
+                  </TabsContent>
+                  
+                  <TabsContent value="reviews">
+                    <ReviewsSection />
+                  </TabsContent>
+                </Tabs>
               </div>
             </div>
           </div>
