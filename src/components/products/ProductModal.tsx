@@ -581,7 +581,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden p-0">
         <DialogTitle className="sr-only">{product.name}</DialogTitle>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 h-full">
+        <div className="grid grid-cols-1 lg:grid-cols-3 h-[90vh]">
           {/* Left - Images (2/3 width on large screens) */}
           <div className="lg:col-span-2 bg-gray-50 p-4">
             {product.image_urls && product.image_urls.length > 1 ? (
