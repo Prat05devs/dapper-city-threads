@@ -57,21 +57,21 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
 
-  const handleBidAmountChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBidAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setBidAmount(e.target.value);
-  }, []);
+  };
 
-  const handleBidMessageChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleBidMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setBidMessage(e.target.value);
-  }, []);
+  };
 
-  const handleContactMessageChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleContactMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setContactMessage(e.target.value);
-  }, []);
+  };
 
-  const handleReviewCommentChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleReviewCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setReviewComment(e.target.value);
-  }, []);
+  };
 
   useEffect(() => {
     if (product && isOpen) {
