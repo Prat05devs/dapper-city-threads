@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -57,29 +57,13 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
 
-  const handleBidAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setBidAmount(e.target.value);
-  };
-
-  const handleBidMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setBidMessage(e.target.value);
-  };
-
-  const handleContactMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setContactMessage(e.target.value);
-  };
-
-  const handleReviewCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setReviewComment(e.target.value);
-  };
-
   useEffect(() => {
     if (product && isOpen) {
       fetchSellerData();
       fetchSellerReviews();
       checkIfLiked();
     }
-  }, [product?.id, isOpen, user?.id]);
+  }, [product, isOpen, user]);
 
   const fetchSellerData = async () => {
     if (!product) return;
@@ -126,7 +110,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
     setIsLiked(!!data && !error);
   };
 
-  const toggleLike = useCallback(async () => {
+  const toggleLike = async () => {
     if (!user || !product) {
       toast({
         title: "Please sign in",
@@ -152,9 +136,9 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
         });
       setIsLiked(true);
     }
-  }, [user, product, isLiked, toast]);
+  };
 
-  const placeBid = useCallback(async () => {
+  const placeBid = async () => {
     if (!user || !product) {
       toast({
         title: "Please sign in",
@@ -185,10 +169,11 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
 
     if (bidAmountNum > product.price) {
       toast({
-        title: "High bid",
-        description: "Your bid is higher than the asking price. The seller may accept it immediately.",
-        variant: "default",
+        title: "Invalid amount",
+        description: "Bid amount cannot exceed the product price.",
+        variant: "destructive",
       });
+      return;
     }
 
     setLoading(true);
@@ -231,7 +216,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
     }
 
     setLoading(false);
-  }, [user, product, bidAmount, bidMessage, toast]);
+  };
 
   const submitReview = async () => {
     if (!user || !product) {
@@ -284,7 +269,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
     setReviewSubmitting(false);
   };
 
-  const sendMessage = useCallback(async () => {
+  const sendMessage = async () => {
     if (!user || !product || !contactMessage.trim()) {
       toast({
         title: "Please sign in and enter a message",
@@ -317,7 +302,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
       });
       setContactMessage('');
     }
-  }, [user, product, contactMessage, toast]);
+  };
 
   const handleBuyNow = async () => {
     if (!user || !product) {
@@ -397,7 +382,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
 
   if (!product) return null;
 
-  const renderStars = useCallback((rating: number, interactive = false, onStarClick?: (rating: number) => void) => {
+  const renderStars = (rating: number, interactive = false, onStarClick?: (rating: number) => void) => {
     return [...Array(5)].map((_, i) => (
       <Star
         key={i}
@@ -407,7 +392,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
         onClick={() => interactive && onStarClick && onStarClick(i + 1)}
       />
     ));
-  }, []);
+  };
 
   const ActionButtons = () => {
     if (!user) {
@@ -430,6 +415,17 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
 
     return (
       <div className="space-y-4">
+        {/* Buy Now Button */}
+        <Button 
+          onClick={handleBuyNow} 
+          disabled={paymentLoading} 
+          className="w-full"
+          size="lg"
+        >
+          <CreditCard className="w-4 h-4 mr-2" />
+          {paymentLoading ? 'Processing...' : `Buy Now - ₹${product.price.toLocaleString()}`}
+        </Button>
+
         {/* Make Offer Section */}
         <div className="space-y-3">
           <h4 className="font-medium text-gray-900 flex items-center gap-2">
@@ -441,7 +437,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
               type="number"
               placeholder="Amount"
               value={bidAmount}
-              onChange={handleBidAmountChange}
+              onChange={(e) => setBidAmount(e.target.value)}
               className="flex-1"
             />
             <Button 
@@ -449,13 +445,13 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
               disabled={loading || !bidAmount} 
               variant="outline"
             >
-              {loading ? 'Placing...' : 'Bid'}
+              {loading ? 'Placing...' : 'Offer'}
             </Button>
           </div>
           <Textarea
             placeholder="Optional message to seller"
             value={bidMessage}
-            onChange={handleBidMessageChange}
+            onChange={(e) => setBidMessage(e.target.value)}
             rows={2}
             className="text-sm"
           />
@@ -471,7 +467,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
             <Textarea
               placeholder="Message seller..."
               value={contactMessage}
-              onChange={handleContactMessageChange}
+              onChange={(e) => setContactMessage(e.target.value)}
               rows={2}
               className="flex-1"
             />
@@ -539,7 +535,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
           <Textarea
             placeholder="Share your experience..."
             value={reviewComment}
-            onChange={handleReviewCommentChange}
+            onChange={(e) => setReviewComment(e.target.value)}
             rows={3}
           />
           <Button 
@@ -558,7 +554,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
           <p>No reviews yet</p>
         </div>
       ) : (
-        <div className="space-y-4 max-h-80 overflow-y-auto">
+        <div className="space-y-4 max-h-60 overflow-y-auto">
           {reviews.map((review) => (
             <div key={review.id} className="pb-4 border-b last:border-b-0">
               <div className="flex items-center justify-between mb-2">
@@ -582,18 +578,18 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto p-0">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden p-0">
         <DialogTitle className="sr-only">{product.name}</DialogTitle>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 min-h-[600px]">
+        <div className="grid grid-cols-1 lg:grid-cols-3 h-full">
           {/* Left - Images (2/3 width on large screens) */}
           <div className="lg:col-span-2 bg-gray-50 p-4">
             {product.image_urls && product.image_urls.length > 1 ? (
-              <Carousel className="w-full">
-                <CarouselContent>
+              <Carousel className="w-full h-full">
+                <CarouselContent className="h-full">
                   {product.image_urls.map((url, index) => (
-                    <CarouselItem key={index}>
-                      <div className="aspect-square bg-white rounded-lg overflow-hidden shadow-sm">
+                    <CarouselItem key={index} className="h-full">
+                      <div className="aspect-square bg-white rounded-lg overflow-hidden shadow-sm h-full">
                         <img 
                           src={url} 
                           alt={`${product.name} - ${index + 1}`}
@@ -627,7 +623,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose })
           </div>
 
           {/* Right - Product Details (1/3 width on large screens) */}
-          <div className="lg:col-span-1 flex flex-col">
+          <div className="lg:col-span-1 flex flex-col h-full">
             {/* Header */}
             <div className="p-6 border-b">
               <div className="flex items-start justify-between gap-4">
